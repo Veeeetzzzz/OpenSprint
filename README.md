@@ -26,7 +26,7 @@ Open source issue tracker for Agile teams, built with React, TypeScript, Tailwin
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/opensprint.git # Replace with your repo URL
+    git clone https://github.com/Veeeetzzzz/opensprint.git # Replace with your repo URL
     cd opensprint
     ```
 2.  **Install dependencies:**
