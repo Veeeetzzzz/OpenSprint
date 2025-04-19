@@ -8,6 +8,7 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Search } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Header() {
   return (
@@ -46,6 +47,7 @@ export function Header() {
         </div>
 
         <Button variant="default">Create</Button>
+        <ThemeToggle />
       </div>
     </header>
   );
