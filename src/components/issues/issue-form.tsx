@@ -19,6 +19,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import type { Issue } from '@/types'; // Import Issue type
+
+// Define the type for the data needed to create an issue (excluding id, status, etc.)
+type CreateIssueData = Omit<Issue, 'id' | 'status' | 'reporter' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments' | 'labels' | 'assignee' | 'epic' | 'estimate'>;
+
+// Define component props
+interface IssueFormProps {
+  addIssue: (data: CreateIssueData) => void;
+}
 
 const issueSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -27,17 +36,32 @@ const issueSchema = z.object({
   description: z.string().min(1, 'Description is required'),
 });
 
-export function IssueForm() {
-  const form = useForm<z.infer<typeof issueSchema>>({
+// Type for validated form values
+type IssueFormValues = z.infer<typeof issueSchema>;
+
+// Accept addIssue prop
+export function IssueForm({ addIssue }: IssueFormProps) {
+  const form = useForm<IssueFormValues>({
     resolver: zodResolver(issueSchema),
     defaultValues: {
+      title: '',
+      description: '',
       type: 'story',
       priority: 'medium',
     },
   });
 
-  function onSubmit(values: z.infer<typeof issueSchema>) {
-    console.log(values);
+  function onSubmit(values: IssueFormValues) {
+    // Prepare data for addIssue (matching CreateIssueData)
+    const issueData: CreateIssueData = {
+      title: values.title,
+      description: values.description,
+      type: values.type, // Zod ensures this matches IssueType
+      priority: values.priority, // Zod ensures this matches Priority
+    };
+    addIssue(issueData); // Call the function passed from App.tsx
+    form.reset(); // Reset form fields
+    console.log("Issue created:", issueData);
   }
 
   return (
@@ -125,9 +149,9 @@ export function IssueForm() {
             </FormItem>
           )}
         />
-
+        
         <div className="flex justify-end gap-4">
-          <Button variant="outline" type="button">
+          <Button variant="outline" type="button" onClick={() => form.reset()}>
             Cancel
           </Button>
           <Button type="submit">Create Issue</Button>

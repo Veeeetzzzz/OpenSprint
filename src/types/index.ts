@@ -2,7 +2,7 @@ export type Priority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
 
 export type IssueType = 'story' | 'task' | 'bug' | 'epic';
 
-export type IssueStatus = 'backlog' | 'selected' | 'inProgress' | 'done';
+export type IssueStatus = 'todo' | 'backlog' | 'selected' | 'inProgress' | 'done';
 
 export interface User {
   id: string;

@@ -9,8 +9,13 @@ import {
 } from '@/components/ui/navigation-menu';
 import { Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import type { Dispatch, SetStateAction } from 'react';
 
-export function Header() {
+interface HeaderProps {
+  setActiveTab: Dispatch<SetStateAction<string>>;
+}
+
+export function Header({ setActiveTab }: HeaderProps) {
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4 gap-6">
@@ -46,7 +51,7 @@ export function Header() {
           </div>
         </div>
 
-        <Button variant="default">Create</Button>
+        <Button variant="default" onClick={() => setActiveTab('create')}>Create</Button>
         <ThemeToggle />
       </div>
     </header>
