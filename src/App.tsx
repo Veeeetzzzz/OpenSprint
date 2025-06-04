@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Sidebar } from '@/components/layout/sidebar';
 import { KanbanBoard } from '@/components/board/kanban-board';
-import type { Issue, IssueStatus } from '@/types';
+import type { Issue } from '@/types';
 import { ProjectStats } from '@/components/dashboard/project-stats';
 import { IssueForm } from '@/components/issues/issue-form';
 import { ProjectSettings } from '@/components/settings/project-settings';
@@ -59,16 +59,16 @@ function App() {
               <KanbanBoard issues={issues} setIssues={setIssues} />
             </TabsContent>
             <TabsContent value="timeline" className="m-0">
-              <TimelinePage />
+              <TimelinePage issues={issues} />
             </TabsContent>
             <TabsContent value="backlog" className="m-0">
-              <BacklogPage />
+              <BacklogPage issues={issues} />
             </TabsContent>
             <TabsContent value="create" className="m-0 max-w-2xl">
               <IssueForm addIssue={addIssue} />
             </TabsContent>
             <TabsContent value="dashboard" className="m-0">
-              <ProjectStats />
+              <ProjectStats issues={issues} />
             </TabsContent>
             <TabsContent value="settings" className="m-0">
               <ProjectSettings />

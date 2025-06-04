@@ -8,16 +8,14 @@ import {
   PointerSensor, 
   closestCenter, 
   useSensor, 
-  useSensors 
+  useSensors,
+  useDroppable
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
   arrayMove, 
-  rectSortingStrategy 
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Issue, IssueStatus } from '@/types';
 import type { Dispatch, SetStateAction } from 'react';
 import { SortableItem } from './sortable-item';
@@ -32,6 +30,42 @@ const columns: { title: string; status: IssueStatus }[] = [
   { title: 'Done', status: 'done' },
 ];
 
+// Droppable Column Component
+function DroppableColumn({ 
+  column, 
+  issues, 
+  children 
+}: { 
+  column: { title: string; status: IssueStatus }; 
+  issues: Issue[];
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: column.status,
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`w-80 flex-shrink-0 bg-muted/50 rounded-lg p-2 transition-colors ${
+        isOver ? 'bg-muted/70 ring-2 ring-primary/20' : ''
+      }`}
+    >
+      <div className="mb-3 flex items-center justify-between px-2 pt-1">
+        <h3 className="font-semibold text-sm text-muted-foreground">
+          {column.title}
+        </h3>
+        <span className="rounded-full bg-background px-2 py-1 text-xs">
+          {issues.length}
+        </span>
+      </div>
+      <div className="space-y-2 min-h-[200px]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // Define component props
 interface KanbanBoardProps {
   issues: Issue[];
@@ -42,17 +76,10 @@ interface KanbanBoardProps {
 export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
 
-  // Define sensors
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor)
   );
-
-  // Find the index of an issue in the current list
-  const findIssueIndex = (id: string) => issues.findIndex(issue => issue.id === id);
-
-  // Find the status (column id) for a given issue id
-  const findIssueStatus = (id: string) => issues.find(issue => issue.id === id)?.status;
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -62,47 +89,51 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveIssue(null); // Clear active issue after drag ends
+    setActiveIssue(null);
 
-    if (over && active.id !== over.id) {
-      setIssues((currentIssues) => {
-        const activeIndex = findIssueIndex(active.id as string);
-        const overId = over.id as string;
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    setIssues((currentIssues) => {
+      const activeIndex = currentIssues.findIndex(issue => issue.id === activeId);
+      const activeIssue = currentIssues[activeIndex];
+      
+      // Check if we're dropping on a column
+      const targetColumn = columns.find(col => col.status === overId);
+      if (targetColumn) {
+        // Moving to a different column
+        if (activeIssue.status !== targetColumn.status) {
+          const updatedIssue = { ...activeIssue, status: targetColumn.status, updatedAt: new Date() };
+          const newIssues = [...currentIssues];
+          newIssues[activeIndex] = updatedIssue;
+          return newIssues;
+        }
+        return currentIssues;
+      }
+      
+      // Check if we're dropping on another issue
+      const overIndex = currentIssues.findIndex(issue => issue.id === overId);
+      if (overIndex !== -1) {
+        const overIssue = currentIssues[overIndex];
         
-        // Find status of the container the item was dropped over
-        // over.id could be a column status or another issue id
-        let overStatus = findIssueStatus(overId);
-        if (!overStatus) { // If over.id is not an issue, it might be a column id (status)
-            const isColumn = columns.some(col => col.status === overId);
-            if (isColumn) {
-                overStatus = overId as IssueStatus;
-            }
+        // If moving to a different column
+        if (activeIssue.status !== overIssue.status) {
+          const updatedIssue = { ...activeIssue, status: overIssue.status, updatedAt: new Date() };
+          const newIssues = [...currentIssues];
+          newIssues[activeIndex] = updatedIssue;
+          return newIssues;
         }
         
-        // If we couldn't determine the destination status, bail out
-        if (!overStatus) return currentIssues; 
-
-        const activeIssue = currentIssues[activeIndex];
-
-        // If status changed or item moved within the same column
-        if (activeIssue.status !== overStatus) {
-          // Change status
-          const updatedIssue = { ...activeIssue, status: overStatus };
-          // Remove from old position, add to new status group (at the end for simplicity)
-          const filteredIssues = currentIssues.filter(issue => issue.id !== active.id);
-          // This simple approach doesn't handle reordering within the new column
-          // A more complex logic would be needed to insert at the correct index based on over.id
-          return [...filteredIssues, updatedIssue]; 
-        } else {
-          // Reorder within the same column
-          const overIndex = findIssueIndex(overId);
-          if (activeIndex !== overIndex) {
-             return arrayMove(currentIssues, activeIndex, overIndex);
-          }
+        // Reordering within the same column
+        if (activeIndex !== overIndex) {
+          return arrayMove(currentIssues, activeIndex, overIndex);
         }
-        return currentIssues; // Return unchanged if no move happened
-      });
-    }
+      }
+      
+      return currentIssues;
+    });
   };
 
   return (
@@ -114,30 +145,17 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
     >
       <div className="flex gap-4 overflow-x-auto pb-4 h-full">
         {columns.map((column) => {
-          // Get issues for this column
           const columnIssues = issues.filter((issue) => issue.status === column.status);
-          // Get just the IDs for SortableContext
           const issueIds = columnIssues.map(issue => issue.id);
           
           return (
-            <div key={column.status} className="w-80 flex-shrink-0 bg-muted/50 rounded-lg p-2">
-              <div className="mb-3 flex items-center justify-between px-2 pt-1">
-                <h3 className="font-semibold text-sm text-muted-foreground">
-                  {column.title}
-                </h3>
-                <span className="rounded-full bg-background px-2 py-1 text-xs">
-                  {columnIssues.length}
-                </span>
-              </div>
-              {/* Wrap items in SortableContext */}
-              <SortableContext items={issueIds} strategy={rectSortingStrategy}>
-                <div className="space-y-0 min-h-[50px]"> {/* Remove space-y-3, margin is on SortableItem */}
-                  {columnIssues.map((issue) => (
-                    <SortableItem key={issue.id} issue={issue} />
-                  ))}
-                </div>
+            <DroppableColumn key={column.status} column={column} issues={columnIssues}>
+              <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
+                {columnIssues.map((issue) => (
+                  <SortableItem key={issue.id} issue={issue} />
+                ))}
               </SortableContext>
-            </div>
+            </DroppableColumn>
           );
         })}
       </div>
