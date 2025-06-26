@@ -16,7 +16,8 @@ export function SortableItem({ issue }: SortableItemProps) {
     listeners, 
     setNodeRef, 
     transform, 
-    transition 
+    transition,
+    isDragging
   } = useSortable({ id: issue.id });
 
   const style = {
@@ -29,8 +30,12 @@ export function SortableItem({ issue }: SortableItemProps) {
       ref={setNodeRef} 
       style={style} 
       {...attributes} 
-      {...listeners} // Spread listeners to make the whole card draggable
-      className="p-3 mb-3 cursor-grab touch-none hover:border-primary/50 active:cursor-grabbing"
+      {...listeners}
+      className={`p-3 mb-3 cursor-grab touch-none transition-all duration-200 ${
+        isDragging 
+          ? 'opacity-50 rotate-2 shadow-xl scale-105 ring-2 ring-primary/30' 
+          : 'hover:border-primary/50 hover:shadow-md active:cursor-grabbing'
+      }`}
     >
        <div className="flex items-center gap-2 mb-2">
          <Badge variant="outline" className="text-xs pointer-events-none">
@@ -39,8 +44,7 @@ export function SortableItem({ issue }: SortableItemProps) {
          <Badge variant="secondary" className="text-xs pointer-events-none">
            {issue.priority}
          </Badge>
-         {/* Optionally make only the handle draggable: move listeners here and remove from Card */}
-         <DragHandleDots2Icon className="h-4 w-4 text-muted-foreground ml-auto" /> 
+         <DragHandleDots2Icon className="h-4 w-4 text-muted-foreground ml-auto opacity-60 hover:opacity-100 transition-opacity" /> 
        </div>
        <h4 className="text-sm font-medium mb-2 pointer-events-none">{issue.title}</h4>
        {issue.reporter && (

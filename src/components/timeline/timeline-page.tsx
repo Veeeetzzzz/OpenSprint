@@ -77,9 +77,31 @@ const getStatusColor = (status: Issue['status']) => {
     case 'inProgress':
       return 'bg-blue-500';
     case 'todo':
+      return 'bg-yellow-500';
+    case 'backlog':
       return 'bg-gray-500';
+    case 'selected':
+      return 'bg-purple-500';
     default:
       return 'bg-gray-500';
+  }
+};
+
+// Helper function to get status text
+const getStatusText = (status: Issue['status']) => {
+  switch (status) {
+    case 'done':
+      return 'Completed';
+    case 'inProgress':
+      return 'In Progress';
+    case 'todo':
+      return 'To Do';
+    case 'backlog':
+      return 'Backlog';
+    case 'selected':
+      return 'Selected';
+    default:
+      return status;
   }
 };
 
@@ -156,7 +178,7 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
                           {issue.priority}
                         </Badge>
                         <Badge variant={issue.status === 'done' ? 'default' : 'secondary'}>
-                          {issue.status}
+                          {getStatusText(issue.status)}
                         </Badge>
                       </div>
                       <CardTitle className="text-lg">{issue.title}</CardTitle>

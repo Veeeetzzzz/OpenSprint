@@ -47,20 +47,29 @@ function DroppableColumn({
   return (
     <div 
       ref={setNodeRef}
-      className={`w-80 flex-shrink-0 bg-muted/50 rounded-lg p-2 transition-colors ${
-        isOver ? 'bg-muted/70 ring-2 ring-primary/20' : ''
+      className={`w-80 flex-shrink-0 rounded-lg p-2 transition-all duration-200 ${
+        isOver 
+          ? 'bg-primary/10 ring-2 ring-primary/30 shadow-lg scale-[1.02]' 
+          : 'bg-muted/50 hover:bg-muted/70'
       }`}
     >
       <div className="mb-3 flex items-center justify-between px-2 pt-1">
         <h3 className="font-semibold text-sm text-muted-foreground">
           {column.title}
         </h3>
-        <span className="rounded-full bg-background px-2 py-1 text-xs">
+        <span className="rounded-full bg-background px-2 py-1 text-xs font-medium">
           {issues.length}
         </span>
       </div>
-      <div className="space-y-2 min-h-[200px]">
+      <div className={`space-y-2 min-h-[200px] rounded-md p-2 transition-colors ${
+        isOver ? 'bg-background/50' : ''
+      }`}>
         {children}
+        {isOver && issues.length === 0 && (
+          <div className="flex items-center justify-center h-20 border-2 border-dashed border-primary/30 rounded-md">
+            <p className="text-sm text-muted-foreground">Drop issue here</p>
+          </div>
+        )}
       </div>
     </div>
   );

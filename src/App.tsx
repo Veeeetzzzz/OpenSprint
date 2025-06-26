@@ -37,22 +37,22 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-foreground">
       <Header setActiveTab={setActiveTab} />
       <div className="flex">
-        <aside className="w-64 border-r">
+        <aside className="w-64">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-6 overflow-auto bg-background">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="board" className="data-[state=inactive]:text-primary-foreground">Board</TabsTrigger>
-                <TabsTrigger value="timeline" className="data-[state=inactive]:text-primary-foreground">Timeline</TabsTrigger>
-                <TabsTrigger value="backlog" className="data-[state=inactive]:text-primary-foreground">Backlog</TabsTrigger>
-                <TabsTrigger value="create" className="data-[state=inactive]:text-primary-foreground">Create Issue</TabsTrigger>
-                <TabsTrigger value="dashboard" className="data-[state=inactive]:text-primary-foreground">Dashboard</TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=inactive]:text-primary-foreground">Settings</TabsTrigger>
+              <TabsList className="bg-muted">
+                <TabsTrigger value="board">Board</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="backlog">Backlog</TabsTrigger>
+                <TabsTrigger value="create">Create Issue</TabsTrigger>
+                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="board" className="m-0">

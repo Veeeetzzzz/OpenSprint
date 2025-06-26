@@ -12,22 +12,17 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     return activeTab === tabName ? 'secondary' : 'ghost';
   };
 
-  // Define common classes for inactive buttons
-  const inactiveClasses = "w-full justify-start text-primary-foreground dark:text-foreground";
-  // Define common classes for active buttons
-  const activeClasses = "w-full justify-start text-secondary-foreground";
-
   return (
-    <div className="pb-12 min-h-screen">
+    <div className="pb-12 min-h-screen bg-background border-r border-border">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight text-foreground">
             Project name
           </h2>
           <div className="space-y-1">
             <Button 
               variant={getVariant('board')} 
-              className={activeTab === 'board' ? activeClasses : inactiveClasses}
+              className="w-full justify-start"
               onClick={() => setActiveTab('board')}
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
@@ -35,7 +30,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             </Button>
             <Button 
               variant={getVariant('timeline')} 
-              className={activeTab === 'timeline' ? activeClasses : inactiveClasses}
+              className="w-full justify-start"
               onClick={() => setActiveTab('timeline')}
             >
               <Timeline className="mr-2 h-4 w-4" />
@@ -43,7 +38,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             </Button>
             <Button 
               variant={getVariant('backlog')} 
-              className={activeTab === 'backlog' ? activeClasses : inactiveClasses}
+              className="w-full justify-start"
               onClick={() => setActiveTab('backlog')}
             >
               <ListTodo className="mr-2 h-4 w-4" />
@@ -51,7 +46,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             </Button>
             <Button 
               variant={getVariant('settings')} 
-              className={activeTab === 'settings' ? activeClasses : inactiveClasses}
+              className="w-full justify-start"
               onClick={() => setActiveTab('settings')}
             >
               <Settings className="mr-2 h-4 w-4" />

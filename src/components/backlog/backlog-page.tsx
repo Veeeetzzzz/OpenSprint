@@ -156,26 +156,26 @@ const formatDate = (date: Date) => {
 };
 
 export function BacklogPage({ issues = [] }: BacklogPageProps) {
-  // Use passed issues or fallback to mock data, filter for backlog status
-  const backlogIssues = issues.length > 0 
-    ? issues.filter(issue => issue.status === 'backlog')
-    : mockBacklogIssues;
+  // Use all passed issues or fallback to mock data if no issues exist
+  const allIssues = issues.length > 0 ? issues : mockBacklogIssues;
     
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'priority' | 'created' | 'estimate'>('priority');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Filter and sort issues
-  const filteredAndSortedIssues = backlogIssues
+  const filteredAndSortedIssues = allIssues
     .filter(issue => {
       const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            issue.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPriority = filterPriority === 'all' || issue.priority === filterPriority;
       const matchesType = filterType === 'all' || issue.type === filterType;
+      const matchesStatus = filterStatus === 'all' || issue.status === filterStatus;
       
-      return matchesSearch && matchesPriority && matchesType;
+      return matchesSearch && matchesPriority && matchesType && matchesStatus;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -210,7 +210,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
           </p>
         </div>
         <div className="text-sm text-muted-foreground">
-          {filteredAndSortedIssues.length} of {backlogIssues.length} issues
+          {filteredAndSortedIssues.length} of {allIssues.length} issues
         </div>
       </div>
 
@@ -251,6 +251,19 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
               <SelectItem value="task">Task</SelectItem>
               <SelectItem value="bug">Bug</SelectItem>
               <SelectItem value="epic">Epic</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="backlog">Backlog</SelectItem>
+              <SelectItem value="todo">To Do</SelectItem>
+              <SelectItem value="inProgress">In Progress</SelectItem>
+              <SelectItem value="done">Done</SelectItem>
             </SelectContent>
           </Select>
 
@@ -295,6 +308,12 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
                         </Badge>
                         <Badge variant="outline" className={getPriorityColor(issue.priority)}>
                           {issue.priority}
+                        </Badge>
+                        <Badge variant={issue.status === 'done' ? 'default' : 'secondary'} className="text-xs">
+                          {issue.status === 'inProgress' ? 'In Progress' : 
+                           issue.status === 'todo' ? 'To Do' :
+                           issue.status === 'done' ? 'Done' :
+                           issue.status === 'backlog' ? 'Backlog' : issue.status}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {issue.id}
@@ -342,7 +361,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
             <MixerHorizontalIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No issues found</h3>
             <p className="text-muted-foreground">
-              {searchTerm || filterPriority !== 'all' || filterType !== 'all'
+              {searchTerm || filterPriority !== 'all' || filterType !== 'all' || filterStatus !== 'all'
                 ? 'Try adjusting your filters or search terms'
                 : 'Your backlog is empty. Create some issues to get started.'}
             </p>
