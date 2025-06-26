@@ -19,11 +19,11 @@ import { Textarea } from '@/components/ui/textarea';
 export function ProjectSettings() {
   return (
     <Tabs defaultValue="general" className="w-full">
-      <TabsList>
-        <TabsTrigger value="general" className="data-[state=inactive]:text-primary-foreground">General</TabsTrigger>
-        <TabsTrigger value="workflow" className="data-[state=inactive]:text-primary-foreground">Workflow</TabsTrigger>
-        <TabsTrigger value="members" className="data-[state=inactive]:text-primary-foreground">Members</TabsTrigger>
-        <TabsTrigger value="permissions" className="data-[state=inactive]:text-primary-foreground">Permissions</TabsTrigger>
+      <TabsList className="bg-muted">
+        <TabsTrigger value="general">General</TabsTrigger>
+        <TabsTrigger value="workflow">Workflow</TabsTrigger>
+        <TabsTrigger value="members">Members</TabsTrigger>
+        <TabsTrigger value="permissions">Permissions</TabsTrigger>
       </TabsList>
       <TabsContent value="general" className="space-y-6">
         <div className="space-y-4">

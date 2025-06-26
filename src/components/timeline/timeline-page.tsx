@@ -70,11 +70,11 @@ const mockTimelineIssues: Issue[] = [
 ];
 
 // Helper function to get status color
-const getStatusColor = (status: Issue['status']) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'done':
       return 'bg-green-500';
-    case 'inProgress':
+    case 'in-progress':
       return 'bg-blue-500';
     case 'todo':
       return 'bg-yellow-500';
@@ -83,23 +83,23 @@ const getStatusColor = (status: Issue['status']) => {
     case 'selected':
       return 'bg-purple-500';
     default:
-      return 'bg-gray-500';
+      return 'bg-gray-400';
   }
 };
 
 // Helper function to get status text
-const getStatusText = (status: Issue['status']) => {
+const getStatusText = (status: string) => {
   switch (status) {
     case 'done':
       return 'Completed';
-    case 'inProgress':
+    case 'in-progress':
       return 'In Progress';
     case 'todo':
       return 'To Do';
     case 'backlog':
       return 'Backlog';
     case 'selected':
-      return 'Selected';
+      return 'Selected for Development';
     default:
       return status;
   }

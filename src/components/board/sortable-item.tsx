@@ -31,10 +31,10 @@ export function SortableItem({ issue }: SortableItemProps) {
       style={style} 
       {...attributes} 
       {...listeners}
-      className={`p-3 mb-3 cursor-grab touch-none transition-all duration-200 ${
+      className={`p-3 mb-3 cursor-grab touch-none transition-all duration-200 bg-card border-border ${
         isDragging 
           ? 'opacity-50 rotate-2 shadow-xl scale-105 ring-2 ring-primary/30' 
-          : 'hover:border-primary/50 hover:shadow-md active:cursor-grabbing'
+          : 'hover:border-primary/50 hover:shadow-md active:cursor-grabbing hover:bg-accent/5'
       }`}
     >
        <div className="flex items-center gap-2 mb-2">

@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export function Header({ setActiveTab }: HeaderProps) {
   return (
-    <header className="border-b">
+    <header className="border-b border-border bg-card">
       <div className="flex h-16 items-center px-4 gap-6">
         <NavigationMenu>
           <NavigationMenuList>
@@ -47,7 +47,7 @@ export function Header({ setActiveTab }: HeaderProps) {
         <div className="flex-1">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search issues" className="pl-8" />
+            <Input placeholder="Search issues" className="pl-8 bg-background" />
           </div>
         </div>
 
