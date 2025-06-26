@@ -39,8 +39,8 @@ function App() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header setActiveTab={setActiveTab} />
-      <div className="flex">
-        <aside className="w-64">
+      <div className="flex bg-background">
+        <aside className="w-64 bg-card">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </aside>
         <main className="flex-1 p-6 overflow-auto bg-background">

@@ -8,10 +8,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
-  const getVariant = (tabName: string) => {
-    return activeTab === tabName ? 'secondary' : 'ghost';
-  };
-
   return (
     <div className="pb-12 min-h-screen bg-card border-r border-border">
       <div className="space-y-4 py-4">
@@ -21,32 +17,48 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           </h2>
           <div className="space-y-1">
             <Button 
-              variant={getVariant('board')} 
-              className="w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground"
+              variant="ghost"
+              className={`w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground ${
+                activeTab === 'board' 
+                  ? 'bg-accent text-accent-foreground' 
+                  : 'bg-transparent'
+              }`}
               onClick={() => setActiveTab('board')}
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
               Kanban Board
             </Button>
             <Button 
-              variant={getVariant('timeline')} 
-              className="w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground"
+              variant="ghost"
+              className={`w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground ${
+                activeTab === 'timeline' 
+                  ? 'bg-accent text-accent-foreground' 
+                  : 'bg-transparent'
+              }`}
               onClick={() => setActiveTab('timeline')}
             >
               <Timeline className="mr-2 h-4 w-4" />
               Timeline
             </Button>
             <Button 
-              variant={getVariant('backlog')} 
-              className="w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground"
+              variant="ghost"
+              className={`w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground ${
+                activeTab === 'backlog' 
+                  ? 'bg-accent text-accent-foreground' 
+                  : 'bg-transparent'
+              }`}
               onClick={() => setActiveTab('backlog')}
             >
               <ListTodo className="mr-2 h-4 w-4" />
               Backlog
             </Button>
             <Button 
-              variant={getVariant('settings')} 
-              className="w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground"
+              variant="ghost"
+              className={`w-full justify-start text-card-foreground hover:bg-accent hover:text-accent-foreground ${
+                activeTab === 'settings' 
+                  ? 'bg-accent text-accent-foreground' 
+                  : 'bg-transparent'
+              }`}
               onClick={() => setActiveTab('settings')}
             >
               <Settings className="mr-2 h-4 w-4" />
