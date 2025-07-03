@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  opensprint:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PROVIDER=sqlite
+      - DATABASE_URL=file:./data/opensprint.db
+      - JWT_SECRET=${JWT_SECRET:-please-change-this-jwt-secret-key-123456789}
+      - AUTH_MODE=simple
+      - FEATURE_AUDIT_LOG=false
+      - FEATURE_WEBHOOKS=false
+    volumes:
+      - sqlite_data:/app/data
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  uploads: 

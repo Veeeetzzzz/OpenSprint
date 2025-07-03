@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // For development, use PostgreSQL in production
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reportedIssues Issue[] @relation("IssueReporter")
+  assignedIssues Issue[] @relation("IssueAssignee")
+  comments       Comment[]
+  projectMembers ProjectMember[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  description String?
+  type        String   @default("scrum") // "scrum" or "kanban"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  issues  Issue[]
+  members ProjectMember[]
+  labels  Label[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String
+  role      String   @default("member") // "admin", "member", "viewer"
+  createdAt DateTime @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_members")
+}
+
+model Issue {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // "story", "task", "bug", "epic"
+  status      String   @default("todo") // "backlog", "todo", "inProgress", "done"
+  priority    String   @default("medium") // "lowest", "low", "medium", "high", "highest"
+  estimate    Int?
+  projectId   String
+  reporterId  String
+  assigneeId  String?
+  epicId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter User      @relation("IssueReporter", fields: [reporterId], references: [id])
+  assignee User?     @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  epic     Issue?    @relation("IssueEpic", fields: [epicId], references: [id])
+  subIssues Issue[]  @relation("IssueEpic")
+  comments Comment[]
+  labels   IssueLabel[]
+
+  @@map("issues")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  issueId   String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  author User  @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
+
+model Label {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#gray")
+  description String?
+  projectId   String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issues  IssueLabel[]
+
+  @@unique([name, projectId])
+  @@map("labels")
+}
+
+model IssueLabel {
+  issueId String
+  labelId String
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([issueId, labelId])
+  @@map("issue_labels")
+} 

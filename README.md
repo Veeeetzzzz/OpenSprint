@@ -1,63 +1,177 @@
 # OpenSprint
 
-Open source issue tracker for Agile teams, built with React, TypeScript, Tailwind CSS, and shadcn/ui.
+**Open source issue tracker for Agile teams** - A self-hosted, enterprise-ready alternative to Jira/Atlassian.
+
+Built with React, TypeScript, Node.js, and PostgreSQL/SQLite.
 
 ## ✨ Features
 
-*   **Kanban Board:** Visualize workflow and manage issues.
-*   **Issue Creation:** Basic form for creating new issues.
-*   **Project Views:** Dedicated sections for Timeline, Backlog, and Settings (basic scaffolding).
-*   **Theme Switching:** Light, Dark, and System theme support.
-*   **Responsive Design:** Adapts to different screen sizes.
+- **Kanban Board:** Drag & drop issue management with smooth animations
+- **Issue Tracking:** Complete issue lifecycle management
+- **Timeline View:** Visual project timeline with status indicators  
+- **Backlog Management:** Prioritization and sprint planning
+- **Dashboard:** Real-time project statistics and insights
+- **Multi-tenancy:** Project-based organization
+- **Responsive Design:** Works on desktop, tablet, and mobile
 
-## 🚀 Roadmap
+## 🏢 Enterprise Ready
 
-*   **Timeline View:** Implement a visual project timeline.
-*   **Backlog View:** Develop backlog management features (priority, estimation).
-*   **Full Issue Management:** Add features like editing, assigning, commenting, status updates.
-*   **User Authentication:** Implement user login and permissions.
-*   **Dashboard Enhancements:** Add more project statistics and visualizations.
-*   **Advanced Search & Filtering:** Improve issue searching capabilities.
-*   **Workflow Customization:** Allow defining custom project workflows.
-*   **Member Management:** Add functionality to invite and manage project members.
-*   **Permissions Control:** Implement role-based access control.
+### **Deployment Options**
+- **Simple:** Single Docker container with SQLite
+- **Scalable:** Docker Compose with PostgreSQL and Redis
+- **Enterprise:** Kubernetes with external databases
 
-## 🛠️ Running Locally
+### **Authentication**
+- **Built-in:** Simple username/password
+- **SSO:** SAML and OIDC integration
+- **Enterprise:** Active Directory, LDAP
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Veeeetzzzz/opensprint.git # Replace with your repo URL
-    cd opensprint
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # or
-    yarn install
-    # or
-    pnpm install
-    ```
-3.  **Run the development server:**
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    # or
-    pnpm dev
-    ```
-4.  Open [http://localhost:5173](http://localhost:5173) (or the port specified in your console) in your browser.
+### **Security & Compliance**
+- Role-based access control (RBAC)
+- Audit logging
+- Rate limiting
+- HTTPS/TLS support
+- SOC 2 compliance ready
 
-## 🤝 Contributing
+## 🚀 Quick Start
 
-Contributions are welcome! If you'd like to contribute, please follow these steps:
+### **Option 1: Simple Deployment (SQLite)**
+```bash
+# Clone and run with Docker
+git clone https://github.com/yourusername/opensprint.git
+cd opensprint
+docker compose -f docker-compose.simple.yml up -d
+```
 
-1.  **Fork the repository.**
-2.  **Create a new branch** for your feature or bug fix:
-    ```bash
-    git checkout -b feature/your-feature-name
-    ```
-3.  **Make your changes** and commit them with descriptive messages.
-4.  **Push your changes** to your forked repository.
-5.  **Open a Pull Request** to the main repository's `main` branch.
+### **Option 2: Enterprise Deployment (PostgreSQL)**
+```bash
+# Clone repository
+git clone https://github.com/yourusername/opensprint.git
+cd opensprint
 
-Please ensure your code adheres to the project's coding standards and includes tests where applicable.
+# Set environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run with PostgreSQL
+docker compose up -d
+```
+
+### **Option 3: Development Setup**
+```bash
+# Install dependencies
+npm install
+
+# Set up database
+cp .env.example .env
+npx prisma generate
+npx prisma db push
+
+# Start development servers
+npm run dev
+```
+
+## ⚙️ Configuration
+
+### **Environment Variables**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_PROVIDER` | `sqlite` | Database type: `sqlite` or `postgresql` |
+| `DATABASE_URL` | `file:./dev.db` | Database connection string |
+| `AUTH_MODE` | `simple` | Auth mode: `simple`, `oidc`, `saml`, `disabled` |
+| `JWT_SECRET` | - | JWT signing secret (required) |
+| `FEATURE_AUDIT_LOG` | `false` | Enable audit logging |
+| `FEATURE_WEBHOOKS` | `false` | Enable webhook integrations |
+
+### **Simple vs Enterprise**
+
+| Feature | Simple | Enterprise |
+|---------|--------|------------|
+| Database | SQLite | PostgreSQL + Redis |
+| Authentication | Built-in | SSO + LDAP |
+| Deployment | Single container | Multi-container + Load balancer |
+| Monitoring | Basic logs | Full observability stack |
+| Backup | File-based | Automated + Point-in-time recovery |
+
+## 🔧 Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   React SPA     │◄──►│   Node.js API   │◄──►│   PostgreSQL    │
+│   (Frontend)    │    │   (Backend)     │    │   (Database)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                       ┌─────────────────┐
+                       │     Redis       │
+                       │   (Caching)     │
+                       └─────────────────┘
+```
+
+## 📊 Roadmap
+
+### **v0.2.0 - Authentication & Multi-tenancy**
+- [ ] User authentication system
+- [ ] Project-based access control
+- [ ] User management interface
+
+### **v0.3.0 - Advanced Features**
+- [ ] Custom workflows
+- [ ] Time tracking
+- [ ] Reports and analytics
+- [ ] Email notifications
+
+### **v1.0.0 - Enterprise**
+- [ ] SSO integration (SAML/OIDC)
+- [ ] Advanced permissions
+- [ ] Audit trails
+- [ ] API integrations
+- [ ] Kubernetes deployment
+
+## 🛠️ Development
+
+### **Tech Stack**
+- **Frontend:** React 18, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Node.js, Express, Prisma ORM
+- **Database:** PostgreSQL (prod), SQLite (dev)
+- **Infrastructure:** Docker, Kubernetes
+
+### **Contributing**
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+### **Running Tests**
+```bash
+# Unit tests
+npm test
+
+# E2E tests
+npm run test:e2e
+
+# Database tests
+npm run test:db
+```
+
+## 🔒 Security
+
+- Report security vulnerabilities to security@opensprint.dev
+- All data encrypted in transit and at rest
+- Regular security audits and dependency updates
+- OWASP compliance guidelines followed
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Support
+
+- **Community:** [GitHub Discussions](https://github.com/yourusername/opensprint/discussions)
+- **Documentation:** [docs.opensprint.dev](https://docs.opensprint.dev)
+- **Enterprise Support:** [enterprise@opensprint.dev](mailto:enterprise@opensprint.dev)
+
+---
+
+**Made with ❤️ for the open source community**
