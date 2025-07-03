@@ -9,36 +9,43 @@ import {
 } from '@/components/ui/navigation-menu';
 import { Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import type { Dispatch, SetStateAction } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
-interface HeaderProps {
-  setActiveTab: Dispatch<SetStateAction<string>>;
-}
+export function Header() {
+  const navigate = useNavigate();
+  const { projectId } = useParams();
 
-export function Header({ setActiveTab }: HeaderProps) {
+  const handleCreateClick = () => {
+    if (projectId) {
+      navigate(`/projects/${projectId}/create`);
+    } else {
+      navigate('/projects/default/create');
+    }
+  };
+
   return (
     <header className="border-b border-border bg-card">
       <div className="flex h-16 items-center px-4 gap-6">
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/">
-                Your Work
+              <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Link to="/your-work">Your Work</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/projects">
-                Projects
+              <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Link to="/projects">Projects</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/filters">
-                Filters
+              <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Link to="/filters">Filters</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()} href="/dashboards">
-                Dashboards
+              <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                <Link to="/dashboards">Dashboards</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>
@@ -51,7 +58,7 @@ export function Header({ setActiveTab }: HeaderProps) {
           </div>
         </div>
 
-        <Button variant="default" onClick={() => setActiveTab('create')}>Create</Button>
+        <Button variant="default" onClick={handleCreateClick}>Create</Button>
         <ThemeToggle />
       </div>
     </header>
