@@ -15,8 +15,12 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { UserManagement } from './user-management';
+import { useParams } from 'react-router-dom';
 
 export function ProjectSettings() {
+  const { projectId } = useParams();
+  
   return (
     <Tabs defaultValue="general" className="w-full">
       <TabsList className="bg-muted">
@@ -73,7 +77,7 @@ export function ProjectSettings() {
         {/* Workflow settings content */}
       </TabsContent>
       <TabsContent value="members" className="space-y-6">
-        {/* Members management content */}
+        {projectId && <UserManagement projectId={projectId} />}
       </TabsContent>
       <TabsContent value="permissions" className="space-y-6">
         {/* Permissions configuration content */}

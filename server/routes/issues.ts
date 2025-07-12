@@ -1,17 +1,36 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createError } from '../middleware/errorHandler';
+import { authenticate } from '../middleware/auth';
+import { requireProjectAccess } from '../middleware/projectAccess';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Get all issues
-router.get('/', async (req, res, next) => {
+// Get issues for a project
+router.get('/', authenticate, async (req, res, next) => {
   try {
     const { projectId, status, type, priority } = req.query;
 
-    const where: any = {};
-    if (projectId) where.projectId = projectId as string;
+    if (!projectId) {
+      throw createError('Project ID is required', 400);
+    }
+
+    // Check if user has access to the project
+    const projectMember = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: req.user!.id,
+          projectId: projectId as string,
+        },
+      },
+    });
+
+    if (!projectMember) {
+      throw createError('Access denied: You are not a member of this project', 403);
+    }
+
+    const where: any = { projectId: projectId as string };
     if (status) where.status = status as string;
     if (type) where.type = type as string;
     if (priority) where.priority = priority as string;
@@ -49,12 +68,13 @@ router.get('/', async (req, res, next) => {
 });
 
 // Create issue
-router.post('/', async (req, res, next) => {
+router.post('/', authenticate, requireProjectAccess('member'), async (req, res, next) => {
   try {
-    const { title, description, type, priority, projectId, reporterId, assigneeId } = req.body;
+    const { title, description, type, priority, assigneeId } = req.body;
+    const projectId = req.projectAccess!.projectId;
 
-    if (!title || !type || !projectId || !reporterId) {
-      throw createError('Title, type, projectId, and reporterId are required', 400);
+    if (!title || !type) {
+      throw createError('Title and type are required', 400);
     }
 
     const issue = await prisma.issue.create({
@@ -64,7 +84,7 @@ router.post('/', async (req, res, next) => {
         type,
         priority: priority || 'medium',
         projectId,
-        reporterId,
+        reporterId: req.user!.id,
         assigneeId,
       },
       include: {
@@ -87,10 +107,34 @@ router.post('/', async (req, res, next) => {
 });
 
 // Update issue
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    // First get the issue to check project access
+    const existingIssue = await prisma.issue.findUnique({
+      where: { id },
+      select: { projectId: true }
+    });
+
+    if (!existingIssue) {
+      throw createError('Issue not found', 404);
+    }
+
+    // Check if user has access to the project
+    const projectMember = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: req.user!.id,
+          projectId: existingIssue.projectId,
+        },
+      },
+    });
+
+    if (!projectMember) {
+      throw createError('Access denied: You are not a member of this project', 403);
+    }
 
     const issue = await prisma.issue.update({
       where: { id },
@@ -118,9 +162,33 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // Delete issue
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // First get the issue to check project access
+    const existingIssue = await prisma.issue.findUnique({
+      where: { id },
+      select: { projectId: true }
+    });
+
+    if (!existingIssue) {
+      throw createError('Issue not found', 404);
+    }
+
+    // Check if user has admin access to the project
+    const projectMember = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: req.user!.id,
+          projectId: existingIssue.projectId,
+        },
+      },
+    });
+
+    if (!projectMember || projectMember.role !== 'admin') {
+      throw createError('Access denied: Admin role required', 403);
+    }
 
     await prisma.issue.delete({
       where: { id },

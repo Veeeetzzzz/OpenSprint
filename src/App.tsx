@@ -10,6 +10,8 @@ import { ProjectSettings } from '@/components/settings/project-settings';
 import { TimelinePage } from '@/components/timeline/timeline-page';
 import { BacklogPage } from '@/components/backlog/backlog-page';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
+import { AuthForm } from '@/components/auth/auth-form';
 
 // Define the type expected from the form
 type CreateIssueData = Omit<Issue, 'id' | 'status' | 'reporter' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments' | 'labels' | 'assignee' | 'epic' | 'estimate'>;
@@ -166,16 +168,54 @@ function YourWork() {
   );
 }
 
+// Protected route wrapper
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthForm />;
+  }
+
+  return <>{children}</>;
+}
+
+// Main authenticated app layout
+function AuthenticatedApp() {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-6">
+          <Routes>
+            <Route path="/" element={<Navigate to="/projects/default" replace />} />
+            <Route path="/your-work" element={<YourWork />} />
+            <Route path="/projects" element={<ProjectsOverview />} />
+            <Route path="/projects/:projectId/*" element={<ProjectLayout />} />
+            <Route path="/filters" element={<div className="min-h-screen bg-background text-foreground flex items-center justify-center"><h1 className="text-2xl">Filters - Coming Soon</h1></div>} />
+            <Route path="/dashboards" element={<div className="min-h-screen bg-background text-foreground flex items-center justify-center"><h1 className="text-2xl">Dashboards - Coming Soon</h1></div>} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/projects/default" replace />} />
-      <Route path="/your-work" element={<YourWork />} />
-      <Route path="/projects" element={<ProjectsOverview />} />
-      <Route path="/projects/:projectId/*" element={<ProjectLayout />} />
-      <Route path="/filters" element={<div className="min-h-screen bg-background text-foreground flex items-center justify-center"><h1 className="text-2xl">Filters - Coming Soon</h1></div>} />
-      <Route path="/dashboards" element={<div className="min-h-screen bg-background text-foreground flex items-center justify-center"><h1 className="text-2xl">Dashboards - Coming Soon</h1></div>} />
-    </Routes>
+    <AuthProvider>
+      <ProtectedRoute>
+        <AuthenticatedApp />
+      </ProtectedRoute>
+    </AuthProvider>
   );
 }
 

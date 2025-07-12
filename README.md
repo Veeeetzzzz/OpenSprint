@@ -157,7 +157,7 @@ npm run test:db
 
 ## 🔒 Security
 
-- Report security vulnerabilities to security@opensprint.dev
+- Report security vulnerabilities via GitHub issues
 - All data encrypted in transit and at rest
 - Regular security audits and dependency updates
 - OWASP compliance guidelines followed

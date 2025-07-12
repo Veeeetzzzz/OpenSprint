@@ -15,15 +15,12 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
-interface SidebarProps {
-  projectId: string;
-}
-
-export function Sidebar({ projectId }: SidebarProps) {
+export function Sidebar() {
   const [isProjectOpen, setIsProjectOpen] = useState(true);
   const location = useLocation();
+  const { projectId = 'default' } = useParams();
 
   const isActive = (path: string) => {
     return location.pathname.includes(path);
