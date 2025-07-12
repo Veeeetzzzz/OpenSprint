@@ -63,7 +63,7 @@ function ProjectLayout() {
       <Header />
       <div className="flex bg-background">
         <aside className="w-64 bg-card">
-          <Sidebar projectId={projectId} />
+          <Sidebar />
         </aside>
         <main className="flex-1 p-6 overflow-auto bg-background">
           <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">

@@ -170,7 +170,7 @@ router.get('/me', async (req, res, next) => {
       data: { user },
     });
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    if (error instanceof Error && error.name === 'JsonWebTokenError') {
       next(createError('Invalid token', 401));
     } else {
       next(error);
