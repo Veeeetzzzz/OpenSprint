@@ -15,6 +15,7 @@ declare global {
         email: string;
         name: string;
         avatarUrl: string | null;
+        isActive: boolean;
       };
     }
   }
@@ -51,6 +52,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      isActive: user.isActive,
     };
 
     next();
@@ -91,6 +93,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
         email: user.email,
         name: user.name,
         avatarUrl: user.avatarUrl,
+        isActive: user.isActive,
       };
     }
 
