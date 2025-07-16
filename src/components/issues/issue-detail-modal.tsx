@@ -15,8 +15,7 @@ import {
   CalendarIcon, 
   PersonIcon, 
   ChatBubbleIcon,
-  Pencil1Icon,
-  Cross2Icon
+  Pencil1Icon
 } from '@radix-ui/react-icons';
 import type { Issue } from '@/types';
 
