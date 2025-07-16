@@ -19,6 +19,7 @@ import {
 import { Issue, IssueStatus } from '@/types';
 import type { Dispatch, SetStateAction } from 'react';
 import { SortableItem } from './sortable-item';
+import { IssueDetailModal } from '@/components/issues/issue-detail-modal';
 
 // Remove mockIssues data
 // const mockIssues: Issue[] = [ ... ];
@@ -84,6 +85,8 @@ interface KanbanBoardProps {
 // Accept issues and setIssues props
 export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -145,34 +148,66 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
     });
   };
 
+  const handleIssueClick = (issue: Issue) => {
+    setSelectedIssue(issue);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedIssue(null);
+  };
+
+  const handleUpdateIssue = (updatedIssue: Issue) => {
+    setIssues((currentIssues) => 
+      currentIssues.map((issue) => 
+        issue.id === updatedIssue.id ? updatedIssue : issue
+      )
+    );
+    setSelectedIssue(updatedIssue);
+  };
+
   return (
-    <DndContext 
-      sensors={sensors} 
-      collisionDetection={closestCenter} 
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 overflow-x-auto pb-4 h-full">
-        {columns.map((column) => {
-          const columnIssues = issues.filter((issue) => issue.status === column.status);
-          const issueIds = columnIssues.map(issue => issue.id);
-          
-          return (
-            <DroppableColumn key={column.status} column={column} issues={columnIssues}>
-              <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
-                {columnIssues.map((issue) => (
-                  <SortableItem key={issue.id} issue={issue} />
-                ))}
-              </SortableContext>
-            </DroppableColumn>
-          );
-        })}
-      </div>
-      {/* DragOverlay to render the item being dragged */}
-      <DragOverlay>
-        {activeIssue ? <SortableItem issue={activeIssue} /> : null}
-      </DragOverlay>
-    </DndContext>
+    <>
+      <DndContext 
+        sensors={sensors} 
+        collisionDetection={closestCenter} 
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4 h-full">
+          {columns.map((column) => {
+            const columnIssues = issues.filter((issue) => issue.status === column.status);
+            const issueIds = columnIssues.map(issue => issue.id);
+            
+            return (
+              <DroppableColumn key={column.status} column={column} issues={columnIssues}>
+                <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
+                  {columnIssues.map((issue) => (
+                    <SortableItem 
+                      key={issue.id} 
+                      issue={issue} 
+                      onClick={handleIssueClick}
+                    />
+                  ))}
+                </SortableContext>
+              </DroppableColumn>
+            );
+          })}
+        </div>
+        {/* DragOverlay to render the item being dragged */}
+        <DragOverlay>
+          {activeIssue ? <SortableItem issue={activeIssue} /> : null}
+        </DragOverlay>
+      </DndContext>
+
+      <IssueDetailModal
+        issue={selectedIssue}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onUpdateIssue={handleUpdateIssue}
+      />
+    </>
   );
 }
 
