@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,49 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
-import { API_BASE_URL } from '@/lib/config';
-
-interface DemoConfig {
-  demoMode: boolean;
-  demoCredentials?: {
-    username: string;
-    password: string;
-    email: string;
-  };
-}
 
 export function AuthForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [demoConfig, setDemoConfig] = useState<DemoConfig | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const { login, register } = useAuth();
 
-  // Fetch demo configuration on component mount
-  useEffect(() => {
-    const fetchDemoConfig = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/auth/config`);
-        if (response.ok) {
-          const data = await response.json();
-          setDemoConfig(data.data);
-        }
-      } catch (error) {
-        console.log('Failed to fetch demo config:', error);
-      }
-    };
-
-    fetchDemoConfig();
-  }, []);
-
   const handleDemoLogin = async () => {
-    if (!demoConfig?.demoCredentials) return;
-    
     setIsLoading(true);
     setError('');
 
     try {
-      await login(demoConfig.demoCredentials.email, demoConfig.demoCredentials.password);
+      await login('demo@opensprint.io', 'demo');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Demo login failed');
     } finally {
@@ -58,14 +28,12 @@ export function AuthForm() {
   };
 
   const fillDemoCredentials = () => {
-    if (!demoConfig?.demoCredentials) return;
-
     const emailInput = document.getElementById('email') as HTMLInputElement;
     const passwordInput = document.getElementById('password') as HTMLInputElement;
     
     if (emailInput && passwordInput) {
-      emailInput.value = demoConfig.demoCredentials.email;
-      passwordInput.value = demoConfig.demoCredentials.password;
+      emailInput.value = 'demo@opensprint.io';
+      passwordInput.value = 'demo';
     }
   };
 
@@ -127,36 +95,34 @@ export function AuthForm() {
           <CardDescription className="text-center">
             Sign in to your account or create a new one
           </CardDescription>
-          {demoConfig?.demoMode && demoConfig.demoCredentials && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="space-y-2">
-                <div className="font-medium">Try the Demo!</div>
-                <div className="text-sm text-muted-foreground">
-                  Use these credentials to explore OpenSprint:
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="space-y-2">
+              <div className="font-medium">Try the Demo!</div>
+              <div className="text-sm text-muted-foreground">
+                Use these credentials to explore OpenSprint (works offline):
+              </div>
+              <div className="font-mono text-sm space-y-1">
+                <div>Email: demo@opensprint.io</div>
+                <div className="flex items-center gap-2">
+                  Password: 
+                  {showPassword ? (
+                    <span>demo</span>
+                  ) : (
+                    <span>••••</span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="h-auto p-1"
+                  >
+                    {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </Button>
                 </div>
-                <div className="font-mono text-sm space-y-1">
-                  <div>Email: {demoConfig.demoCredentials.email}</div>
-                  <div className="flex items-center gap-2">
-                    Password: 
-                    {showPassword ? (
-                      <span>{demoConfig.demoCredentials.password}</span>
-                    ) : (
-                      <span>••••</span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="h-auto p-1"
-                    >
-                      {showPassword ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                    </Button>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+              </div>
+            </AlertDescription>
+          </Alert>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
@@ -166,30 +132,28 @@ export function AuthForm() {
             </TabsList>
 
             <TabsContent value="login" className="space-y-4">
-              {demoConfig?.demoMode && demoConfig.demoCredentials && (
-                <div className="space-y-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={handleDemoLogin}
-                    disabled={isLoading}
-                  >
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    🚀 Quick Demo Login
-                  </Button>
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or enter manually
-                      </span>
-                    </div>
+              <div className="space-y-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleDemoLogin}
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  🚀 Quick Demo Login
+                </Button>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or enter manually
+                    </span>
                   </div>
                 </div>
-              )}
+              </div>
               
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -215,18 +179,16 @@ export function AuthForm() {
                   />
                 </div>
                 
-                {demoConfig?.demoMode && demoConfig.demoCredentials && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={fillDemoCredentials}
-                    disabled={isLoading}
-                    className="text-xs"
-                  >
-                    Fill demo credentials
-                  </Button>
-                )}
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={fillDemoCredentials}
+                  disabled={isLoading}
+                  className="text-xs"
+                >
+                  Fill demo credentials
+                </Button>
                 
                 {error && (
                   <Alert variant="destructive">

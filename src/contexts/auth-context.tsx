@@ -63,9 +63,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const isClientOnlyDemo = (email: string, password: string) => {
+    return (email === 'demo@opensprint.io' || email === 'demo') && password === 'demo';
+  };
+
+  const createClientOnlyDemoSession = () => {
+    const demoUser = {
+      id: 'demo-user-id',
+      email: 'demo@opensprint.io',
+      name: 'Demo User',
+      avatarUrl: '',
+    };
+
+    const demoToken = 'demo-token-' + Date.now();
+    
+    setUser(demoUser);
+    setToken(demoToken);
+    localStorage.setItem('auth_token', demoToken);
+    localStorage.setItem('demo_user', JSON.stringify(demoUser));
+  };
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // Check for client-only demo mode first
+      if (isClientOnlyDemo(email, password)) {
+        createClientOnlyDemoSession();
+        return;
+      }
+
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -77,6 +103,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // If backend is not available and it's demo credentials, use client-only mode
+        if (response.status === 404 && isClientOnlyDemo(email, password)) {
+          createClientOnlyDemoSession();
+          return;
+        }
         throw new Error(data.error?.message || 'Login failed');
       }
 
@@ -85,6 +116,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(userToken);
       localStorage.setItem('auth_token', userToken);
     } catch (error) {
+      // If it's a network error and demo credentials, use client-only mode
+      if (isClientOnlyDemo(email, password)) {
+        console.log('Backend not available, using client-only demo mode');
+        createClientOnlyDemoSession();
+        return;
+      }
       throw error;
     } finally {
       setIsLoading(false);
