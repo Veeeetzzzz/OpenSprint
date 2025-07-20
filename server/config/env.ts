@@ -15,6 +15,13 @@ const configSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
   AUTH_MODE: z.enum(['simple', 'oidc', 'saml', 'disabled']).default('simple'),
   
+  // Demo Mode (for hosted demos)
+  DEMO_MODE: z.coerce.boolean().default(false),
+  DEMO_USERNAME: z.string().default('demo'),
+  DEMO_PASSWORD: z.string().default('demo'),
+  DEMO_USER_NAME: z.string().default('Demo User'),
+  DEMO_USER_EMAIL: z.string().default('demo@opensprint.io'),
+  
   // OIDC (optional)
   OIDC_ISSUER: z.string().optional(),
   OIDC_CLIENT_ID: z.string().optional(),
@@ -60,6 +67,7 @@ export const config = loadConfig();
 // Helper functions
 export const isProduction = () => config.NODE_ENV === 'production';
 export const isDevelopment = () => config.NODE_ENV === 'development';
+export const isDemoMode = () => config.DEMO_MODE;
 export const isFeatureEnabled = (feature: keyof Pick<typeof config, 'FEATURE_AUDIT_LOG' | 'FEATURE_WEBHOOKS' | 'FEATURE_CUSTOM_WORKFLOWS'>) => {
   return config[feature];
 }; 

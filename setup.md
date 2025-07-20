@@ -72,6 +72,12 @@ DATABASE_URL="file:./dev.db"                    # SQLite
 JWT_SECRET="your-32-char-secret"
 AUTH_MODE="simple"                              # simple|oidc|saml|disabled
 
+# Demo Mode (for hosted demos)
+DEMO_MODE=false                                 # true for public demos
+DEMO_USERNAME="demo"                            # demo login username
+DEMO_PASSWORD="demo"                            # demo login password
+DEMO_USER_EMAIL="demo@opensprint.io"           # demo user email
+
 # Features (Enterprise)
 FEATURE_AUDIT_LOG=false                         # true for compliance
 FEATURE_WEBHOOKS=false                          # true for integrations

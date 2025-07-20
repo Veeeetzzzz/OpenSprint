@@ -71,6 +71,23 @@ npx prisma db push
 npm run dev
 ```
 
+### **Option 4: Vercel Demo Deployment**
+For hosted demos on Vercel, set these environment variables in your Vercel dashboard:
+
+```bash
+# Required
+JWT_SECRET=your-32-character-secret-key-here
+DEMO_MODE=true
+
+# Optional (customize demo credentials)
+DEMO_USERNAME=demo
+DEMO_PASSWORD=demo
+DEMO_USER_EMAIL=demo@opensprint.io
+DEMO_USER_NAME=Demo User
+```
+
+The demo mode bypasses database requirements and provides instant access with `demo:demo` credentials.
+
 ## ⚙️ Configuration
 
 ### **Environment Variables**
@@ -81,6 +98,10 @@ npm run dev
 | `DATABASE_URL` | `file:./dev.db` | Database connection string |
 | `AUTH_MODE` | `simple` | Auth mode: `simple`, `oidc`, `saml`, `disabled` |
 | `JWT_SECRET` | - | JWT signing secret (required) |
+| `DEMO_MODE` | `false` | Enable demo login for hosted demos |
+| `DEMO_USERNAME` | `demo` | Demo login username |
+| `DEMO_PASSWORD` | `demo` | Demo login password |
+| `DEMO_USER_EMAIL` | `demo@opensprint.io` | Demo user email |
 | `FEATURE_AUDIT_LOG` | `false` | Enable audit logging |
 | `FEATURE_WEBHOOKS` | `false` | Enable webhook integrations |
 

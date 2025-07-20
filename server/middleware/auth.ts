@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { config } from '../config/env';
+import { config, isDemoMode } from '../config/env';
 import { createError } from './errorHandler';
 
 const prisma = new PrismaClient();
@@ -31,6 +31,18 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     }
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as { userId: string; email: string };
+    
+    // Handle demo user when demo mode is enabled
+    if (isDemoMode() && decoded.userId === 'demo-user-id') {
+      req.user = {
+        id: 'demo-user-id',
+        email: config.DEMO_USER_EMAIL,
+        name: config.DEMO_USER_NAME,
+        avatarUrl: null,
+        isActive: true,
+      };
+      return next();
+    }
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -75,6 +87,18 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     }
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as { userId: string; email: string };
+    
+    // Handle demo user when demo mode is enabled
+    if (isDemoMode() && decoded.userId === 'demo-user-id') {
+      req.user = {
+        id: 'demo-user-id',
+        email: config.DEMO_USER_EMAIL,
+        name: config.DEMO_USER_NAME,
+        avatarUrl: null,
+        isActive: true,
+      };
+      return next();
+    }
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
