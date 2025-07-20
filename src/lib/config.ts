@@ -5,13 +5,13 @@ const getApiBaseUrl = (): string => {
     return 'http://localhost:3001/api';
   }
   
-  // In production, use relative path (works for same-origin deployments)
-  // or environment variable if provided
+  // Check if a custom API URL is provided via environment variable
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
   
-  // Default to relative API path for production
+  // For production deployments, assume API is at the same domain with /api prefix
+  // This works for full-stack deployments or when using a reverse proxy
   return '/api';
 };
 

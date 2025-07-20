@@ -1,19 +1,8 @@
 {
-  "functions": {
-    "server/index.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/server/index.ts"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "installCommand": "npm install",
-  "buildCommand": "npm run build"
+  ]
 } 
