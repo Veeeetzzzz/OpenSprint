@@ -4,6 +4,9 @@
 
 Built with React, TypeScript, Node.js, and PostgreSQL/SQLite.
 
+<img width="1569" height="607" alt="image" src="https://github.com/user-attachments/assets/9cdc6184-552e-4fe8-9b4d-79361ec724bc" />
+
+
 ## ✨ Features
 
 - **Kanban Board:** Drag & drop issue management with smooth animations
