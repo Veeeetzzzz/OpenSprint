@@ -1,12 +1,40 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { createError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
-import { requireProjectAccess, requireProjectAdmin, getUserProjects } from '../middleware/projectAccess';
+import { requireProjectAccess, getUserProjects } from '../middleware/projectAccess';
+import { prisma } from '../db/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
+const projectTypeValues = ['scrum', 'kanban'] as const;
+const projectRoleValues = ['admin', 'member', 'viewer'] as const;
+const projectKeyRegex = /^[A-Z][A-Z0-9_]{1,9}$/;
+
+const projectCreateSchema = z.object({
+  name: z.string().min(1),
+  key: z.string().regex(projectKeyRegex),
+  description: z.string().optional(),
+  type: z.enum(projectTypeValues).optional(),
+});
+
+const projectUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    key: z.string().regex(projectKeyRegex).optional(),
+    description: z.string().nullable().optional(),
+    type: z.enum(projectTypeValues).optional(),
+  })
+  .strict();
+
+const projectMemberCreateSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(projectRoleValues).optional(),
+});
+
+const projectMemberUpdateSchema = z.object({
+  role: z.enum(projectRoleValues),
+});
 // Get user's projects
 router.get('/', authenticate, getUserProjects, async (req, res, next) => {
   try {
@@ -24,11 +52,12 @@ router.get('/', authenticate, getUserProjects, async (req, res, next) => {
 // Create project
 router.post('/', authenticate, async (req, res, next) => {
   try {
-    const { name, key, description, type } = req.body;
-
-    if (!name || !key) {
-      throw createError('Name and key are required', 400);
+    const parsedBody = projectCreateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid project payload', 400);
     }
+
+    const { name, key, description, type } = parsedBody.data;
 
     // Create project and add creator as admin
     const project = await prisma.project.create({
@@ -117,7 +146,16 @@ router.get('/:projectId', authenticate, requireProjectAccess('viewer'), async (r
 router.put('/:projectId', authenticate, requireProjectAccess('admin'), async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const updateData = req.body;
+    const parsedBody = projectUpdateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid project update payload', 400);
+    }
+
+    const updateData = parsedBody.data;
+
+    if (Object.keys(updateData).length === 0) {
+      throw createError('No fields provided for update', 400);
+    }
 
     const project = await prisma.project.update({
       where: { id: projectId },
@@ -149,11 +187,12 @@ router.put('/:projectId', authenticate, requireProjectAccess('admin'), async (re
 router.post('/:projectId/members', authenticate, requireProjectAccess('admin'), async (req, res, next) => {
   try {
     const { projectId } = req.params;
-    const { email, role = 'member' } = req.body;
-
-    if (!email) {
-      throw createError('Email is required', 400);
+    const parsedBody = projectMemberCreateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid member payload', 400);
     }
+
+    const { email, role = 'member' } = parsedBody.data;
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -206,16 +245,27 @@ router.post('/:projectId/members', authenticate, requireProjectAccess('admin'), 
 router.put('/:projectId/members/:memberId', authenticate, requireProjectAccess('admin'), async (req, res, next) => {
   try {
     const { projectId, memberId } = req.params;
-    const { role } = req.body;
+    const parsedBody = projectMemberUpdateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid member update payload', 400);
+    }
 
-    if (!role) {
-      throw createError('Role is required', 400);
+    const { role } = parsedBody.data;
+
+    const existingMember = await prisma.projectMember.findFirst({
+      where: {
+        id: memberId,
+        projectId,
+      },
+    });
+
+    if (!existingMember) {
+      throw createError('Project member not found', 404);
     }
 
     const updatedMember = await prisma.projectMember.update({
       where: {
         id: memberId,
-        projectId: projectId,
       },
       data: { role },
       include: {
@@ -239,10 +289,20 @@ router.delete('/:projectId/members/:memberId', authenticate, requireProjectAcces
   try {
     const { projectId, memberId } = req.params;
 
+    const existingMember = await prisma.projectMember.findFirst({
+      where: {
+        id: memberId,
+        projectId,
+      },
+    });
+
+    if (!existingMember) {
+      throw createError('Project member not found', 404);
+    }
+
     await prisma.projectMember.delete({
       where: {
         id: memberId,
-        projectId: projectId,
       },
     });
 

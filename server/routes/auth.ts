@@ -1,13 +1,11 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { config, isDemoMode } from '../config/env';
 import { createError } from '../middleware/errorHandler';
+import { prisma } from '../db/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
-
 // User login
 router.post('/login', async (req, res, next) => {
   try {

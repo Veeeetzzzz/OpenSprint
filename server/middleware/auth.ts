@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { config, isDemoMode } from '../config/env';
 import { createError } from './errorHandler';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma';
 
 // Extend Request interface to include user
 declare global {
@@ -69,11 +67,15 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     next();
   } catch (error) {
-    if (error instanceof Error && error.name === 'JsonWebTokenError') {
-      next(createError('Invalid token', 401));
-    } else {
-      next(error);
+    if (error instanceof jwt.TokenExpiredError) {
+      next(createError('Token expired', 401, 'TOKEN_EXPIRED'));
+      return;
     }
+    if (error instanceof jwt.JsonWebTokenError) {
+      next(createError('Invalid token', 401));
+      return;
+    }
+    next(error);
   }
 };
 

@@ -30,6 +30,12 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
     transition,
   };
 
+  const reporterInitial = issue.reporter?.name?.trim().charAt(0) || '?';
+  const createdAtDate = new Date(issue.createdAt);
+  const createdAtLabel = Number.isNaN(createdAtDate.getTime())
+    ? 'Unknown date'
+    : createdAtDate.toLocaleDateString();
+
   const handleMouseDown = (e: React.MouseEvent) => {
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     setIsDragCandidate(true);
@@ -95,11 +101,11 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
               <Avatar className="h-6 w-6">
                 <AvatarImage src={issue.reporter.avatarUrl} />
                 <AvatarFallback>
-                  {issue.reporter.name.charAt(0)}
+                  {reporterInitial}
                 </AvatarFallback>
               </Avatar>
               <span className="text-xs text-muted-foreground">
-                {new Date(issue.createdAt).toLocaleDateString()}
+                {createdAtLabel}
               </span>
             </div>
           </div>

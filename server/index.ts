@@ -1,18 +1,19 @@
 import express from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config/env';
 import { authRoutes } from './routes/auth';
 import { issueRoutes } from './routes/issues';
 import { projectRoutes } from './routes/projects';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
-
-// Initialize Prisma Client
-const prisma = new PrismaClient();
+import { prisma } from './db/prisma';
 
 // Initialize Express app
 const app = express();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Middleware
 app.use(cors({
@@ -46,6 +47,15 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/issues', issueRoutes);
 app.use('/api/projects', projectRoutes);
+
+// Serve client in production
+if (config.NODE_ENV === 'production') {
+  const clientDistPath = path.join(__dirname, '..');
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Error handling
 app.use(errorHandler);

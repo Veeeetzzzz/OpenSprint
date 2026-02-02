@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { createError } from './errorHandler';
-
-const prisma = new PrismaClient();
+import { prisma } from '../db/prisma';
 
 // Extend Request interface to include project access info
 declare global {

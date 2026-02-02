@@ -1,20 +1,54 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { createError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 import { requireProjectAccess } from '../middleware/projectAccess';
+import { prisma } from '../db/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
+const issueStatusValues = ['backlog', 'todo', 'inProgress', 'done'] as const;
+const issueTypeValues = ['story', 'task', 'bug', 'epic'] as const;
+const issuePriorityValues = ['lowest', 'low', 'medium', 'high', 'highest'] as const;
+
+const issueQuerySchema = z.object({
+  projectId: z.string().min(1),
+  status: z.enum(issueStatusValues).optional(),
+  type: z.enum(issueTypeValues).optional(),
+  priority: z.enum(issuePriorityValues).optional(),
+});
+
+const issueCreateSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  type: z.enum(issueTypeValues),
+  priority: z.enum(issuePriorityValues).optional(),
+  assigneeId: z.string().optional(),
+  estimate: z.number().int().min(0).optional(),
+  epicId: z.string().optional(),
+});
+
+const issueUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    type: z.enum(issueTypeValues).optional(),
+    status: z.enum(issueStatusValues).optional(),
+    priority: z.enum(issuePriorityValues).optional(),
+    estimate: z.number().int().min(0).nullable().optional(),
+    assigneeId: z.string().nullable().optional(),
+    epicId: z.string().nullable().optional(),
+  })
+  .strict();
 // Get issues for a project
 router.get('/', authenticate, async (req, res, next) => {
   try {
-    const { projectId, status, type, priority } = req.query;
-
-    if (!projectId) {
-      throw createError('Project ID is required', 400);
+    const parsedQuery = issueQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      throw createError('Invalid query parameters', 400);
     }
+
+    const { projectId, status, type, priority } = parsedQuery.data;
 
     // Check if user has access to the project
     const projectMember = await prisma.projectMember.findUnique({
@@ -30,10 +64,10 @@ router.get('/', authenticate, async (req, res, next) => {
       throw createError('Access denied: You are not a member of this project', 403);
     }
 
-    const where: any = { projectId: projectId as string };
-    if (status) where.status = status as string;
-    if (type) where.type = type as string;
-    if (priority) where.priority = priority as string;
+    const where: any = { projectId };
+    if (status) where.status = status;
+    if (type) where.type = type;
+    if (priority) where.priority = priority;
 
     const issues = await prisma.issue.findMany({
       where,
@@ -70,11 +104,26 @@ router.get('/', authenticate, async (req, res, next) => {
 // Create issue
 router.post('/', authenticate, requireProjectAccess('member'), async (req, res, next) => {
   try {
-    const { title, description, type, priority, assigneeId } = req.body;
+    const parsedBody = issueCreateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid issue payload', 400);
+    }
+
+    const { title, description, type, priority, assigneeId, estimate, epicId } = parsedBody.data;
     const projectId = req.projectAccess!.projectId;
 
-    if (!title || !type) {
-      throw createError('Title and type are required', 400);
+    if (assigneeId) {
+      const assigneeMembership = await prisma.projectMember.findUnique({
+        where: {
+          userId_projectId: {
+            userId: assigneeId,
+            projectId,
+          },
+        },
+      });
+      if (!assigneeMembership) {
+        throw createError('Assignee must be a project member', 400);
+      }
     }
 
     const issue = await prisma.issue.create({
@@ -86,6 +135,8 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
         projectId,
         reporterId: req.user!.id,
         assigneeId,
+        estimate,
+        epicId,
       },
       include: {
         reporter: {
@@ -110,7 +161,16 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const parsedBody = issueUpdateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid issue update payload', 400);
+    }
+
+    const updateData = parsedBody.data;
+
+    if (Object.keys(updateData).length === 0) {
+      throw createError('No fields provided for update', 400);
+    }
 
     // First get the issue to check project access
     const existingIssue = await prisma.issue.findUnique({
@@ -134,6 +194,20 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     if (!projectMember) {
       throw createError('Access denied: You are not a member of this project', 403);
+    }
+
+    if (updateData.assigneeId) {
+      const assigneeMembership = await prisma.projectMember.findUnique({
+        where: {
+          userId_projectId: {
+            userId: updateData.assigneeId,
+            projectId: existingIssue.projectId,
+          },
+        },
+      });
+      if (!assigneeMembership) {
+        throw createError('Assignee must be a project member', 400);
+      }
     }
 
     const issue = await prisma.issue.update({

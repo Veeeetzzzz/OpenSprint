@@ -110,6 +110,10 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
 
     setIssues((currentIssues) => {
       const activeIndex = currentIssues.findIndex(issue => issue.id === activeId);
+      if (activeIndex === -1) {
+        return currentIssues;
+      }
+
       const activeIssue = currentIssues[activeIndex];
       
       // Check if we're dropping on a column
@@ -129,6 +133,9 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
       const overIndex = currentIssues.findIndex(issue => issue.id === overId);
       if (overIndex !== -1) {
         const overIssue = currentIssues[overIndex];
+        if (!overIssue) {
+          return currentIssues;
+        }
         
         // If moving to a different column
         if (activeIssue.status !== overIssue.status) {

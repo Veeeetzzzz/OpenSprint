@@ -23,39 +23,97 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getStoredToken = () => {
+    try {
+      return localStorage.getItem('auth_token');
+    } catch (error) {
+      console.warn('Failed to access localStorage:', error);
+      return null;
+    }
+  };
+
+  const setStoredToken = (value: string) => {
+    try {
+      localStorage.setItem('auth_token', value);
+    } catch (error) {
+      console.warn('Failed to write auth token:', error);
+    }
+  };
+
+  const removeStoredToken = () => {
+    try {
+      localStorage.removeItem('auth_token');
+    } catch (error) {
+      console.warn('Failed to remove auth token:', error);
+    }
+  };
+
+  const setStoredDemoUser = (value: string) => {
+    try {
+      localStorage.setItem('demo_user', value);
+    } catch (error) {
+      console.warn('Failed to write demo user:', error);
+    }
+  };
+
+  const parseJsonResponse = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return null;
+    }
+    try {
+      return await response.json();
+    } catch (error) {
+      console.warn('Failed to parse JSON response:', error);
+      return null;
+    }
+  };
+
   // Load token from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
+    const controller = new AbortController();
+    const storedToken = getStoredToken();
     if (storedToken) {
       setToken(storedToken);
       // Verify token and get user info
-      verifyToken(storedToken);
+      verifyToken(storedToken, controller.signal);
     } else {
       setIsLoading(false);
     }
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
-  const verifyToken = async (tokenToVerify: string) => {
+  const verifyToken = async (tokenToVerify: string, signal?: AbortSignal) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
         },
+        signal,
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
+        if (!data?.data?.user) {
+          throw new Error('Invalid auth response');
+        }
         setUser(data.data.user);
         setToken(tokenToVerify);
       } else {
         // Token is invalid, remove it
-        localStorage.removeItem('auth_token');
+        removeStoredToken();
         setToken(null);
         setUser(null);
       }
     } catch (error) {
+      if (signal?.aborted) {
+        return;
+      }
       console.error('Token verification failed:', error);
-      localStorage.removeItem('auth_token');
+      removeStoredToken();
       setToken(null);
       setUser(null);
     } finally {
@@ -79,8 +137,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     setUser(demoUser);
     setToken(demoToken);
-    localStorage.setItem('auth_token', demoToken);
-    localStorage.setItem('demo_user', JSON.stringify(demoUser));
+    setStoredToken(demoToken);
+    setStoredDemoUser(JSON.stringify(demoUser));
   };
 
   const login = async (email: string, password: string) => {
@@ -100,7 +158,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
 
       if (!response.ok) {
         // If backend is not available and it's demo credentials, use client-only mode
@@ -114,7 +175,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, token: userToken } = data.data;
       setUser(userData);
       setToken(userToken);
-      localStorage.setItem('auth_token', userToken);
+      setStoredToken(userToken);
     } catch (error) {
       // If it's a network error and demo credentials, use client-only mode
       if (isClientOnlyDemo(email, password)) {
@@ -139,7 +200,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password, name }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
 
       if (!response.ok) {
         throw new Error(data.error?.message || 'Registration failed');
@@ -148,7 +212,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, token: userToken } = data.data;
       setUser(userData);
       setToken(userToken);
-      localStorage.setItem('auth_token', userToken);
+      setStoredToken(userToken);
     } catch (error) {
       throw error;
     } finally {
@@ -172,7 +236,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     setUser(null);
     setToken(null);
-    localStorage.removeItem('auth_token');
+    removeStoredToken();
   };
 
   const value = {

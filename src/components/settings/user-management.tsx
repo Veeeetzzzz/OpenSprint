@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { UserPlus, Trash2, Edit, AlertCircle, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { API_BASE_URL } from '@/lib/config';
 
 interface ProjectMember {
   id: string;
@@ -43,27 +44,48 @@ export function UserManagement({ projectId }: UserManagementProps) {
   const { token } = useAuth();
 
   useEffect(() => {
-    fetchMembers();
+    const controller = new AbortController();
+    fetchMembers(controller.signal);
+    return () => controller.abort();
   }, [projectId]);
 
-  const fetchMembers = async () => {
+  const parseJsonResponse = async (response: Response) => {
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return null;
+    }
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchMembers = async (signal?: AbortSignal) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/projects/${projectId}`, {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
+        signal,
       });
 
       if (!response.ok) {
         throw new Error('Failed to fetch project members');
       }
 
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
+      if (!data?.data?.members) {
+        throw new Error('Invalid member response');
+      }
+
       setMembers(data.data.members || []);
     } catch (err) {
+      if (signal?.aborted) return;
       setError(err instanceof Error ? err.message : 'Failed to fetch members');
     } finally {
+      if (signal?.aborted) return;
       setIsLoading(false);
     }
   };
@@ -74,7 +96,7 @@ export function UserManagement({ projectId }: UserManagementProps) {
     setAddMemberError('');
 
     try {
-      const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members`, {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/members`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +108,10 @@ export function UserManagement({ projectId }: UserManagementProps) {
         }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
 
       if (!response.ok) {
         throw new Error(data.error?.message || 'Failed to add member');
@@ -105,7 +130,7 @@ export function UserManagement({ projectId }: UserManagementProps) {
 
   const updateMemberRole = async (memberId: string, newRole: 'admin' | 'member' | 'viewer') => {
     try {
-      const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members/${memberId}`, {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/members/${memberId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +139,10 @@ export function UserManagement({ projectId }: UserManagementProps) {
         body: JSON.stringify({ role: newRole }),
       });
 
-      const data = await response.json();
+      const data = await parseJsonResponse(response);
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
 
       if (!response.ok) {
         throw new Error(data.error?.message || 'Failed to update member role');
@@ -135,7 +163,7 @@ export function UserManagement({ projectId }: UserManagementProps) {
     if (!confirm('Are you sure you want to remove this member?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/projects/${projectId}/members/${memberId}`, {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/members/${memberId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -143,8 +171,8 @@ export function UserManagement({ projectId }: UserManagementProps) {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error?.message || 'Failed to remove member');
+        const data = await parseJsonResponse(response);
+        throw new Error(data?.error?.message || 'Failed to remove member');
       }
 
       setMembers(members.filter(member => member.id !== memberId));

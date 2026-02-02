@@ -37,8 +37,12 @@ export function IssueDetailModal({
 
   if (!issue) return null;
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+  const formatDate = (date: Date | string) => {
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) {
+      return 'Unknown date';
+    }
+    return parsed.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -103,7 +107,12 @@ export function IssueDetailModal({
           {
             id: `comment-${Date.now()}`,
             content: newComment.trim(),
-            author: issue.reporter, // Use current user in real implementation
+            author: issue.reporter || {
+              id: 'unknown',
+              name: 'Unknown',
+              email: '',
+              avatarUrl: null,
+            }, // Use current user in real implementation
             createdAt: new Date(),
             updatedAt: new Date(),
           }
@@ -245,10 +254,10 @@ export function IssueDetailModal({
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={issue.reporter.avatarUrl} />
                         <AvatarFallback className="text-xs">
-                          {issue.reporter.name.charAt(0)}
+                          {issue.reporter.name?.trim().charAt(0) || '?'}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{issue.reporter.name}</span>
+                      <span className="font-medium">{issue.reporter.name || 'Unknown'}</span>
                     </div>
                   </div>
 
@@ -260,10 +269,10 @@ export function IssueDetailModal({
                         <Avatar className="h-5 w-5">
                           <AvatarImage src={issue.assignee.avatarUrl} />
                           <AvatarFallback className="text-xs">
-                            {issue.assignee.name.charAt(0)}
+                            {issue.assignee.name?.trim().charAt(0) || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-medium">{issue.assignee.name}</span>
+                        <span className="font-medium">{issue.assignee.name || 'Unknown'}</span>
                       </div>
                     </div>
                   )}
@@ -274,7 +283,9 @@ export function IssueDetailModal({
                     <span>{formatDate(issue.createdAt)}</span>
                   </div>
 
-                  {issue.updatedAt > issue.createdAt && (
+                  {!Number.isNaN(new Date(issue.updatedAt).getTime()) &&
+                    !Number.isNaN(new Date(issue.createdAt).getTime()) &&
+                    new Date(issue.updatedAt).getTime() > new Date(issue.createdAt).getTime() && (
                     <div className="flex items-center gap-2 text-sm">
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Updated:</span>
