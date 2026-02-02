@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { config } from './config/env';
 import { authRoutes } from './routes/auth';
 import { issueRoutes } from './routes/issues';
@@ -12,9 +11,6 @@ import { prisma } from './db/prisma';
 
 // Initialize Express app
 const app = express();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // Middleware
 app.use(cors({
   origin: config.FRONTEND_URL,
