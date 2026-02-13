@@ -8,6 +8,8 @@ import { projectRoutes } from './routes/projects';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { prisma } from './db/prisma';
+import { fatalStartup } from './utils/fatal';
+import { connectWithRetry, disconnectSafely } from './startup';
 
 // Initialize Express app
 const app = express();
@@ -58,37 +60,68 @@ app.use(errorHandler);
 
 // Start server
 const PORT = config.PORT || 3001;
+const DB_CONNECT_MAX_RETRIES = 3;
+const DB_CONNECT_RETRY_DELAY_MS = 1000;
+let serverInstance: ReturnType<typeof app.listen> | null = null;
+let isShuttingDown = false;
 
 async function startServer() {
   try {
-    // Connect to database
-    await prisma.$connect();
+    await connectWithRetry(() => prisma.$connect(), {
+      maxRetries: DB_CONNECT_MAX_RETRIES,
+      baseDelayMs: DB_CONNECT_RETRY_DELAY_MS,
+    });
     console.log('✅ Database connected');
 
     // Start server
-    app.listen(PORT, () => {
+    serverInstance = app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${config.NODE_ENV}`);
       console.log(`🔒 Auth mode: ${config.AUTH_MODE}`);
       console.log(`💾 Database: ${config.DATABASE_PROVIDER}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    fatalStartup('Failed to start server', error, { port: PORT });
   }
 }
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
+const shutdownGracefully = async (signal: 'SIGINT' | 'SIGTERM') => {
+  if (isShuttingDown) {
+    return;
+  }
+  isShuttingDown = true;
+  console.log(`🛑 Received ${signal}, shutting down gracefully...`);
+
+  try {
+    if (serverInstance) {
+      await new Promise<void>((resolve, reject) => {
+        serverInstance?.close((error?: Error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+    }
+  } catch (error) {
+    console.error('Failed to close HTTP server cleanly', error);
+  }
+
+  try {
+    await disconnectSafely(() => prisma.$disconnect());
+  } finally {
+    process.exit(0);
+  }
+};
+
+process.on('SIGINT', () => {
+  void shutdownGracefully('SIGINT');
 });
 
-process.on('SIGTERM', async () => {
-  console.log('🛑 Shutting down gracefully...');
-  await prisma.$disconnect();
-  process.exit(0);
+process.on('SIGTERM', () => {
+  void shutdownGracefully('SIGTERM');
 });
 
 startServer();

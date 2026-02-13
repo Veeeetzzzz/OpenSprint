@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 import { requireProjectAccess } from '../middleware/projectAccess';
 import { prisma } from '../db/prisma';
+import { getAuthenticatedUser, getProjectAccessContext } from './requestContext';
 
 const router = express.Router();
 
@@ -43,6 +44,8 @@ const issueUpdateSchema = z
 // Get issues for a project
 router.get('/', authenticate, async (req, res, next) => {
   try {
+    const requester = getAuthenticatedUser(req);
+
     const parsedQuery = issueQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
       throw createError('Invalid query parameters', 400);
@@ -54,7 +57,7 @@ router.get('/', authenticate, async (req, res, next) => {
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
-          userId: req.user!.id,
+          userId: requester.id,
           projectId: projectId as string,
         },
       },
@@ -104,13 +107,16 @@ router.get('/', authenticate, async (req, res, next) => {
 // Create issue
 router.post('/', authenticate, requireProjectAccess('member'), async (req, res, next) => {
   try {
+    const requester = getAuthenticatedUser(req);
+    const projectAccess = getProjectAccessContext(req);
+
     const parsedBody = issueCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
       throw createError('Invalid issue payload', 400);
     }
 
     const { title, description, type, priority, assigneeId, estimate, epicId } = parsedBody.data;
-    const projectId = req.projectAccess!.projectId;
+    const projectId = projectAccess.projectId;
 
     if (assigneeId) {
       const assigneeMembership = await prisma.projectMember.findUnique({
@@ -133,7 +139,7 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
         type,
         priority: priority || 'medium',
         projectId,
-        reporterId: req.user!.id,
+        reporterId: requester.id,
         assigneeId,
         estimate,
         epicId,
@@ -160,6 +166,8 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
 // Update issue
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
+    const requester = getAuthenticatedUser(req);
+
     const { id } = req.params;
     const parsedBody = issueUpdateSchema.safeParse(req.body);
     if (!parsedBody.success) {
@@ -186,7 +194,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
-          userId: req.user!.id,
+          userId: requester.id,
           projectId: existingIssue.projectId,
         },
       },
@@ -238,6 +246,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
 // Delete issue
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
+    const requester = getAuthenticatedUser(req);
+
     const { id } = req.params;
 
     // First get the issue to check project access
@@ -254,7 +264,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const projectMember = await prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
-          userId: req.user!.id,
+          userId: requester.id,
           projectId: existingIssue.projectId,
         },
       },

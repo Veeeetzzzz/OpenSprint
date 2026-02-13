@@ -4,6 +4,7 @@ import { createError } from '../middleware/errorHandler';
 import { authenticate } from '../middleware/auth';
 import { requireProjectAccess, getUserProjects } from '../middleware/projectAccess';
 import { prisma } from '../db/prisma';
+import { getAuthenticatedUser } from './requestContext';
 
 const router = express.Router();
 
@@ -52,6 +53,8 @@ router.get('/', authenticate, getUserProjects, async (req, res, next) => {
 // Create project
 router.post('/', authenticate, async (req, res, next) => {
   try {
+    const requester = getAuthenticatedUser(req);
+
     const parsedBody = projectCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
       throw createError('Invalid project payload', 400);
@@ -68,7 +71,7 @@ router.post('/', authenticate, async (req, res, next) => {
         type: type || 'scrum',
         members: {
           create: {
-            userId: req.user!.id,
+            userId: requester.id,
             role: 'admin'
           }
         }

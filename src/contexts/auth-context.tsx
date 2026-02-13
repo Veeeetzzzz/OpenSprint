@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { API_BASE_URL } from '@/lib/config';
+import { extractAuthPayload } from './auth-response';
 
 interface AuthContextType {
   user: User | null;
@@ -172,7 +173,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(data.error?.message || 'Login failed');
       }
 
-      const { user: userData, token: userToken } = data.data;
+      const { user: userData, token: userToken } = extractAuthPayload(data.data);
       setUser(userData);
       setToken(userToken);
       setStoredToken(userToken);
@@ -209,7 +210,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(data.error?.message || 'Registration failed');
       }
 
-      const { user: userData, token: userToken } = data.data;
+      const { user: userData, token: userToken } = extractAuthPayload(data.data);
       setUser(userData);
       setToken(userToken);
       setStoredToken(userToken);

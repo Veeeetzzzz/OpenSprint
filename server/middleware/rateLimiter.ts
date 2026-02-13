@@ -5,7 +5,7 @@ import { config } from '../config/env';
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
 export const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
-  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  const clientIP = req.ip || req.socket?.remoteAddress || 'unknown';
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutes
   const maxRequests = config.RATE_LIMIT_MAX;

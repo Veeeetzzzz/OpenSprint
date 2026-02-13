@@ -21,8 +21,20 @@ const initialState: ThemeProviderState = {
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({ children, defaultTheme = "system", storageKey = "vite-ui-theme", ...props }: ThemeProviderProps) {
+  const readStoredTheme = (): Theme => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored === "light" || stored === "dark" || stored === "system") {
+        return stored;
+      }
+    } catch (error) {
+      console.warn("Failed to read theme from localStorage:", error);
+    }
+    return defaultTheme;
+  };
+
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => readStoredTheme()
   );
 
   useEffect(() => {
@@ -65,7 +77,11 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
+      try {
+        localStorage.setItem(storageKey, theme);
+      } catch (error) {
+        console.warn("Failed to persist theme in localStorage:", error);
+      }
       setTheme(theme);
     },
   };

@@ -14,6 +14,14 @@ export function AuthForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, register } = useAuth();
 
+  const getStringField = (formData: FormData, key: string): string => {
+    const value = formData.get(key);
+    if (typeof value !== 'string') {
+      throw new Error(`Invalid ${key} field`);
+    }
+    return value.trim();
+  };
+
   const handleDemoLogin = async () => {
     setIsLoading(true);
     setError('');
@@ -43,10 +51,10 @@ export function AuthForm() {
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
 
     try {
+      const email = getStringField(formData, 'email');
+      const password = getStringField(formData, 'password');
       await login(email, password);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -61,24 +69,23 @@ export function AuthForm() {
     setError('');
 
     const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
-    const name = formData.get('name') as string;
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      setIsLoading(false);
-      return;
-    }
 
     try {
+      const email = getStringField(formData, 'email');
+      const password = getStringField(formData, 'password');
+      const confirmPassword = getStringField(formData, 'confirmPassword');
+      const name = getStringField(formData, 'name');
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long');
+        return;
+      }
+
       await register(email, password, name);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');

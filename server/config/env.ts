@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { fatalStartup } from '../utils/fatal';
 
 // Configuration schema with validation
 const configSchema = z.object({
@@ -42,9 +43,11 @@ const configSchema = z.object({
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
+type AppConfig = z.infer<typeof configSchema>;
+type FeatureFlagKey = 'FEATURE_AUDIT_LOG' | 'FEATURE_WEBHOOKS' | 'FEATURE_CUSTOM_WORKFLOWS';
 
 // Load and validate configuration
-const loadConfig = () => {
+const loadConfig = (): AppConfig => {
   try {
     const config = configSchema.parse(process.env);
     
@@ -57,8 +60,7 @@ const loadConfig = () => {
     
     return config;
   } catch (error) {
-    console.error('❌ Configuration validation failed:', error);
-    process.exit(1);
+    return fatalStartup('Configuration validation failed', error);
   }
 };
 
@@ -68,6 +70,6 @@ export const config = loadConfig();
 export const isProduction = () => config.NODE_ENV === 'production';
 export const isDevelopment = () => config.NODE_ENV === 'development';
 export const isDemoMode = () => config.DEMO_MODE;
-export const isFeatureEnabled = (feature: keyof Pick<typeof config, 'FEATURE_AUDIT_LOG' | 'FEATURE_WEBHOOKS' | 'FEATURE_CUSTOM_WORKFLOWS'>) => {
+export const isFeatureEnabled = (feature: FeatureFlagKey) => {
   return config[feature];
 }; 
