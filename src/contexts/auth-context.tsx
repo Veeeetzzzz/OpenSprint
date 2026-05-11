@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@/types';
 import { API_BASE_URL } from '@/lib/config';
 import { extractAuthPayload } from './auth-response';
@@ -8,7 +8,7 @@ interface AuthContextType {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -49,15 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const setStoredDemoUser = (value: string) => {
-    try {
-      localStorage.setItem('demo_user', value);
-    } catch (error) {
-      console.warn('Failed to write demo user:', error);
-    }
-  };
-
-  const parseJsonResponse = async (response: Response) => {
+  const parseJsonResponse = useCallback(async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       return null;
@@ -68,26 +60,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.warn('Failed to parse JSON response:', error);
       return null;
     }
-  };
-
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const controller = new AbortController();
-    const storedToken = getStoredToken();
-    if (storedToken) {
-      setToken(storedToken);
-      // Verify token and get user info
-      verifyToken(storedToken, controller.signal);
-    } else {
-      setIsLoading(false);
-    }
-
-    return () => {
-      controller.abort();
-    };
   }, []);
 
-  const verifyToken = async (tokenToVerify: string, signal?: AbortSignal) => {
+  const verifyToken = useCallback(async (tokenToVerify: string, signal?: AbortSignal) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
@@ -120,37 +95,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [parseJsonResponse]);
 
-  const isClientOnlyDemo = (email: string, password: string) => {
-    return (email === 'demo@opensprint.io' || email === 'demo') && password === 'demo';
-  };
+  // Load token from localStorage on mount
+  useEffect(() => {
+    const controller = new AbortController();
+    const storedToken = getStoredToken();
+    if (storedToken) {
+      setToken(storedToken);
+      void verifyToken(storedToken, controller.signal);
+    } else {
+      setIsLoading(false);
+    }
 
-  const createClientOnlyDemoSession = () => {
-    const demoUser = {
-      id: 'demo-user-id',
-      email: 'demo@opensprint.io',
-      name: 'Demo User',
-      avatarUrl: '',
+    return () => {
+      controller.abort();
     };
-
-    const demoToken = 'demo-token-' + Date.now();
-    
-    setUser(demoUser);
-    setToken(demoToken);
-    setStoredToken(demoToken);
-    setStoredDemoUser(JSON.stringify(demoUser));
-  };
+  }, [verifyToken]);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Check for client-only demo mode first
-      if (isClientOnlyDemo(email, password)) {
-        createClientOnlyDemoSession();
-        return;
-      }
-
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -165,11 +130,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       if (!response.ok) {
-        // If backend is not available and it's demo credentials, use client-only mode
-        if (response.status === 404 && isClientOnlyDemo(email, password)) {
-          createClientOnlyDemoSession();
-          return;
-        }
         throw new Error(data.error?.message || 'Login failed');
       }
 
@@ -177,14 +137,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData);
       setToken(userToken);
       setStoredToken(userToken);
-    } catch (error) {
-      // If it's a network error and demo credentials, use client-only mode
-      if (isClientOnlyDemo(email, password)) {
-        console.log('Backend not available, using client-only demo mode');
-        createClientOnlyDemoSession();
-        return;
-      }
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -214,8 +166,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData);
       setToken(userToken);
       setStoredToken(userToken);
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -280,4 +230,4 @@ export function withAuth<P extends object>(Component: React.ComponentType<P>) {
 
     return <Component {...props} />;
   };
-} 
+}

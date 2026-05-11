@@ -20,17 +20,23 @@ import { Search, User, LogOut, Settings } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth-context';
+import type { Project } from '@/types';
 
-export function Header() {
+interface HeaderProps {
+  projects?: Project[];
+}
+
+export function Header({ projects = [] }: HeaderProps) {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const { user, logout } = useAuth();
 
   const handleCreateClick = () => {
-    if (projectId) {
-      navigate(`/projects/${projectId}/create`);
+    const targetProjectId = projectId || projects[0]?.id;
+    if (targetProjectId) {
+      navigate(`/projects/${targetProjectId}/create`);
     } else {
-      navigate('/projects/default/create');
+      navigate('/projects');
     }
   };
 

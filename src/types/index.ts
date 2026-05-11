@@ -8,7 +8,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
 }
 
 export interface Issue {
@@ -18,12 +18,12 @@ export interface Issue {
   type: IssueType;
   status: IssueStatus;
   priority: Priority;
-  assignee?: User;
+  assignee?: User | null;
   reporter: User;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   estimate?: number;
-  epic?: Issue;
+  epic?: Issue | null;
   comments: Comment[];
   attachments: Attachment[];
   labels: string[];
@@ -33,8 +33,8 @@ export interface Comment {
   id: string;
   content: string;
   author: User;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Attachment {
@@ -42,16 +42,32 @@ export interface Attachment {
   name: string;
   url: string;
   uploadedBy: User;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface Project {
   id: string;
   name: string;
   key: string;
-  description: string;
-  lead: User;
-  members: User[];
-  createdAt: Date;
-  updatedAt: Date;
+  description: string | null;
+  type: 'scrum' | 'kanban';
+  role?: 'admin' | 'member' | 'viewer';
+  userRole?: 'admin' | 'member' | 'viewer';
+  members?: ProjectMember[];
+  permissions?: {
+    canEdit?: boolean;
+    canDelete?: boolean;
+    canManageMembers?: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectMember {
+  id: string;
+  userId: string;
+  projectId: string;
+  role: 'admin' | 'member' | 'viewer';
+  createdAt: string;
+  user: User;
 }

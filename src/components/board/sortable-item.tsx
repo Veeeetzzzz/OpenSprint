@@ -13,11 +13,11 @@ interface SortableItemProps {
 }
 
 export function SortableItem({ issue, onClick }: SortableItemProps) {
-  const { 
-    attributes, 
-    listeners, 
-    setNodeRef, 
-    transform, 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
     transition,
     isDragging
   } = useSortable({ id: issue.id });
@@ -45,13 +45,13 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
     if (dragStartPos.current && onClick && !isDragging) {
       const deltaX = Math.abs(e.clientX - dragStartPos.current.x);
       const deltaY = Math.abs(e.clientY - dragStartPos.current.y);
-      
+
       // Only trigger click if mouse hasn't moved much (not a drag)
       if (deltaX < 5 && deltaY < 5) {
         onClick(issue);
       }
     }
-    
+
     dragStartPos.current = null;
     setIsDragCandidate(false);
   };
@@ -65,13 +65,13 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
   };
 
   return (
-    <Card 
-      ref={setNodeRef} 
-      style={style} 
-      {...attributes} 
+    <Card
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
       className={`p-3 mb-3 cursor-pointer touch-none transition-all duration-200 bg-card border-border ${
-        isDragging 
-          ? 'opacity-50 rotate-2 shadow-xl scale-105 ring-2 ring-primary/30' 
+        isDragging
+          ? 'opacity-50 rotate-2 shadow-xl scale-105 ring-2 ring-primary/30'
           : 'hover:border-primary/50 hover:shadow-md hover:bg-accent/5'
       }`}
       onMouseDown={handleMouseDown}
@@ -79,7 +79,7 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
       onClick={handleClick}
     >
       {/* Drag handle area - only this area should have drag listeners */}
-      <div 
+      <div
         {...listeners}
         className="flex items-center gap-2 mb-2 cursor-grab active:cursor-grabbing"
       >
@@ -89,9 +89,9 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
         <Badge variant="secondary" className="text-xs">
           {issue.priority}
         </Badge>
-        <DragHandleDots2Icon className="h-4 w-4 text-muted-foreground ml-auto opacity-60 hover:opacity-100 transition-opacity" /> 
+        <DragHandleDots2Icon className="h-4 w-4 text-muted-foreground ml-auto opacity-60 hover:opacity-100 transition-opacity" />
       </div>
-      
+
       {/* Clickable content area */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium">{issue.title}</h4>
@@ -99,7 +99,7 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={issue.reporter.avatarUrl} />
+                <AvatarImage src={issue.reporter.avatarUrl || ''} />
                 <AvatarFallback>
                   {reporterInitial}
                 </AvatarFallback>
@@ -113,4 +113,4 @@ export function SortableItem({ issue, onClick }: SortableItemProps) {
       </div>
     </Card>
   );
-} 
+}

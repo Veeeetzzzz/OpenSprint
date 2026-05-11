@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { config } from '../config/env';
+import { config } from '../config/env.js';
 
 export interface ApiError extends Error {
   statusCode?: number;
@@ -10,7 +10,7 @@ export const errorHandler = (
   err: ApiError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -41,4 +41,4 @@ export const createError = (message: string, statusCode: number = 500, code?: st
   error.statusCode = statusCode;
   error.code = code;
   return error;
-}; 
+};

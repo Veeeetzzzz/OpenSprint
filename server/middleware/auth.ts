@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config, isDemoMode } from '../config/env';
-import { createError } from './errorHandler';
-import { prisma } from '../db/prisma';
+import { config, isDemoMode } from '../config/env.js';
+import { createError } from './errorHandler.js';
+import { prisma } from '../db/prisma.js';
 
 // Extend Request interface to include user
 declare global {
@@ -23,13 +23,13 @@ declare global {
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       throw createError('No token provided', 401);
     }
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as { userId: string; email: string };
-    
+
     // Handle demo user when demo mode is enabled
     if (isDemoMode() && decoded.userId === 'demo-user-id') {
       req.user = {
@@ -41,7 +41,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       };
       return next();
     }
-    
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -83,13 +83,13 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       return next();
     }
 
     const decoded = jwt.verify(token, config.JWT_SECRET) as { userId: string; email: string };
-    
+
     // Handle demo user when demo mode is enabled
     if (isDemoMode() && decoded.userId === 'demo-user-id') {
       req.user = {
@@ -101,7 +101,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       };
       return next();
     }
-    
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -124,8 +124,8 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     }
 
     next();
-  } catch (error) {
+  } catch {
     // Ignore token errors in optional auth
     next();
   }
-}; 
+};

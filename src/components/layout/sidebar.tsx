@@ -16,11 +16,19 @@ import {
 } from '@/components/ui/collapsible';
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import type { Project } from '@/types';
 
-export function Sidebar() {
+interface SidebarProps {
+  projects?: Project[];
+}
+
+export function Sidebar({ projects = [] }: SidebarProps) {
   const [isProjectOpen, setIsProjectOpen] = useState(true);
   const location = useLocation();
-  const { projectId = 'default' } = useParams();
+  const { projectId } = useParams();
+  const activeProject = projects.find((project) => project.id === projectId) || projects[0];
+  const activeProjectId = projectId || activeProject?.id;
+  const backlogCount = 0;
 
   const isActive = (path: string) => {
     return location.pathname.includes(path);
@@ -42,18 +50,20 @@ export function Sidebar() {
               >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                    OS
+                    {activeProject?.key?.slice(0, 2) || 'OS'}
                   </div>
                   <div>
-                    <div className="font-medium">OpenSprint Default</div>
-                    <div className="text-xs text-muted-foreground">Software project</div>
+                    <div className="font-medium">{activeProject?.name || 'No project selected'}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {activeProject?.type || 'OpenSprint'}
+                    </div>
                   </div>
                 </div>
                 <ChevronDown className={`h-4 w-4 transition-transform ${isProjectOpen ? 'rotate-180' : ''}`} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-1 mt-2 ml-4">
-              <Link to={`/projects/${projectId}/board`}>
+              <Link to={activeProjectId ? `/projects/${activeProjectId}/board` : '/projects'}>
                 <Button 
                   variant={isActive('/board') ? 'secondary' : 'ghost'} 
                   className="w-full justify-start gap-2 h-9 text-sm font-normal"
@@ -63,7 +73,7 @@ export function Sidebar() {
                 </Button>
               </Link>
               
-              <Link to={`/projects/${projectId}/timeline`}>
+              <Link to={activeProjectId ? `/projects/${activeProjectId}/timeline` : '/projects'}>
                 <Button 
                   variant={isActive('/timeline') ? 'secondary' : 'ghost'} 
                   className="w-full justify-start gap-2 h-9 text-sm font-normal"
@@ -73,18 +83,18 @@ export function Sidebar() {
                 </Button>
               </Link>
               
-              <Link to={`/projects/${projectId}/backlog`}>
+              <Link to={activeProjectId ? `/projects/${activeProjectId}/backlog` : '/projects'}>
                 <Button 
                   variant={isActive('/backlog') ? 'secondary' : 'ghost'} 
                   className="w-full justify-start gap-2 h-9 text-sm font-normal"
                 >
                   <List className="h-4 w-4" />
                   Backlog
-                  <Badge variant="secondary" className="ml-auto text-xs">0</Badge>
+                  <Badge variant="secondary" className="ml-auto text-xs">{backlogCount}</Badge>
                 </Button>
               </Link>
               
-              <Link to={`/projects/${projectId}/dashboard`}>
+              <Link to={activeProjectId ? `/projects/${activeProjectId}/dashboard` : '/projects'}>
                 <Button 
                   variant={isActive('/dashboard') ? 'secondary' : 'ghost'} 
                   className="w-full justify-start gap-2 h-9 text-sm font-normal"
@@ -98,7 +108,7 @@ export function Sidebar() {
         </div>
         
         <div className="p-2 border-t border-border mt-4">
-          <Link to={`/projects/${projectId}/create`}>
+          <Link to={activeProjectId ? `/projects/${activeProjectId}/create` : '/projects'}>
             <Button 
               variant={isActive('/create') ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2 h-9 text-sm font-normal"
@@ -108,7 +118,7 @@ export function Sidebar() {
             </Button>
           </Link>
           
-          <Link to={`/projects/${projectId}/settings`}>
+          <Link to={activeProjectId ? `/projects/${activeProjectId}/settings` : '/projects'}>
             <Button 
               variant={isActive('/settings') ? 'secondary' : 'ghost'} 
               className="w-full justify-start gap-2 h-9 text-sm font-normal"

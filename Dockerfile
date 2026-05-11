@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node --input-type=module -e "import('http').then(m => m.default.get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }))"
 
 # Start the application
-CMD ["node", "dist/server/index.js"] 
+CMD ["node", "dist/server/index.js"]

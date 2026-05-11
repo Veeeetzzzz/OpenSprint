@@ -1,43 +1,39 @@
 import React, { useState } from 'react';
-import { 
-  DndContext, 
-  DragEndEvent, 
-  DragOverlay, 
-  DragStartEvent, 
-  KeyboardSensor, 
-  PointerSensor, 
-  closestCenter, 
-  useSensor, 
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
   useSensors,
   useDroppable
 } from '@dnd-kit/core';
-import { 
-  SortableContext, 
-  arrayMove, 
+import {
+  SortableContext,
+  arrayMove,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { Issue, IssueStatus } from '@/types';
 import type { Dispatch, SetStateAction } from 'react';
 import { SortableItem } from './sortable-item';
 import { IssueDetailModal } from '@/components/issues/issue-detail-modal';
+import type { IssueUpdateInput } from '@/lib/api';
 
-// Remove mockIssues data
-// const mockIssues: Issue[] = [ ... ];
-
-// Define columns (could be moved or made dynamic later)
 const columns: { title: string; status: IssueStatus }[] = [
-  { title: 'To Do', status: 'todo' }, // Assuming 'todo' is a valid status
+  { title: 'To Do', status: 'todo' },
   { title: 'In Progress', status: 'inProgress' },
   { title: 'Done', status: 'done' },
 ];
 
-// Droppable Column Component
-function DroppableColumn({ 
-  column, 
-  issues, 
-  children 
-}: { 
-  column: { title: string; status: IssueStatus }; 
+function DroppableColumn({
+  column,
+  issues,
+  children
+}: {
+  column: { title: string; status: IssueStatus };
   issues: Issue[];
   children: React.ReactNode;
 }) {
@@ -46,11 +42,11 @@ function DroppableColumn({
   });
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       className={`w-80 flex-shrink-0 rounded-lg p-2 transition-all duration-200 ${
-        isOver 
-          ? 'bg-primary/10 ring-2 ring-primary/30 shadow-lg scale-[1.02]' 
+        isOver
+          ? 'bg-primary/10 ring-2 ring-primary/30 shadow-lg scale-[1.02]'
           : 'bg-muted/50 hover:bg-muted/70'
       }`}
     >
@@ -80,10 +76,19 @@ function DroppableColumn({
 interface KanbanBoardProps {
   issues: Issue[];
   setIssues: Dispatch<SetStateAction<Issue[]>>;
+  onAddComment?: (issueId: string, content: string) => Promise<Issue>;
+  onDeleteIssue?: (issueId: string) => Promise<void>;
+  onUpdateIssue?: (issueId: string, updates: IssueUpdateInput) => Promise<Issue>;
 }
 
 // Accept issues and setIssues props
-export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
+export function KanbanBoard({
+  issues,
+  setIssues,
+  onAddComment,
+  onDeleteIssue,
+  onUpdateIssue,
+}: KanbanBoardProps) {
   const [activeIssue, setActiveIssue] = useState<Issue | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -108,51 +113,62 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    setIssues((currentIssues) => {
-      const activeIndex = currentIssues.findIndex(issue => issue.id === activeId);
-      if (activeIndex === -1) {
-        return currentIssues;
+    const activeIndex = issues.findIndex(issue => issue.id === activeId);
+    if (activeIndex === -1) {
+      return;
+    }
+
+    const activeIssue = issues[activeIndex];
+    const persistStatus = (status: IssueStatus) => {
+      const previousIssues = issues;
+      const nextIssues = issues.map((issue) =>
+        issue.id === activeId ? { ...issue, status, updatedAt: new Date().toISOString() } : issue
+      );
+      setIssues(nextIssues);
+      if (!onUpdateIssue) {
+        return;
       }
 
-      const activeIssue = currentIssues[activeIndex];
-      
-      // Check if we're dropping on a column
-      const targetColumn = columns.find(col => col.status === overId);
-      if (targetColumn) {
-        // Moving to a different column
-        if (activeIssue.status !== targetColumn.status) {
-          const updatedIssue = { ...activeIssue, status: targetColumn.status, updatedAt: new Date() };
-          const newIssues = [...currentIssues];
-          newIssues[activeIndex] = updatedIssue;
-          return newIssues;
-        }
-        return currentIssues;
+      void onUpdateIssue(activeId, { status })
+        .then((updatedIssue) => {
+          setIssues((currentIssues) =>
+            currentIssues.map((issue) => (issue.id === activeId ? updatedIssue : issue))
+          );
+        })
+        .catch(() => {
+          setIssues(previousIssues);
+        });
+    };
+
+    // Check if we're dropping on a column
+    const targetColumn = columns.find(col => col.status === overId);
+    if (targetColumn) {
+      // Moving to a different column
+      if (activeIssue.status !== targetColumn.status) {
+        persistStatus(targetColumn.status);
       }
-      
-      // Check if we're dropping on another issue
-      const overIndex = currentIssues.findIndex(issue => issue.id === overId);
-      if (overIndex !== -1) {
-        const overIssue = currentIssues[overIndex];
-        if (!overIssue) {
-          return currentIssues;
-        }
-        
-        // If moving to a different column
-        if (activeIssue.status !== overIssue.status) {
-          const updatedIssue = { ...activeIssue, status: overIssue.status, updatedAt: new Date() };
-          const newIssues = [...currentIssues];
-          newIssues[activeIndex] = updatedIssue;
-          return newIssues;
-        }
-        
-        // Reordering within the same column
-        if (activeIndex !== overIndex) {
-          return arrayMove(currentIssues, activeIndex, overIndex);
-        }
+      return;
+    }
+
+    // Check if we're dropping on another issue
+    const overIndex = issues.findIndex(issue => issue.id === overId);
+    if (overIndex !== -1) {
+      const overIssue = issues[overIndex];
+      if (!overIssue) {
+        return;
       }
-      
-      return currentIssues;
-    });
+
+      // If moving to a different column
+      if (activeIssue.status !== overIssue.status) {
+        persistStatus(overIssue.status);
+        return;
+      }
+
+      // Reordering within the same column
+      if (activeIndex !== overIndex) {
+        setIssues(arrayMove(issues, activeIndex, overIndex));
+      }
+    }
   };
 
   const handleIssueClick = (issue: Issue) => {
@@ -166,8 +182,8 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
   };
 
   const handleUpdateIssue = (updatedIssue: Issue) => {
-    setIssues((currentIssues) => 
-      currentIssues.map((issue) => 
+    setIssues((currentIssues) =>
+      currentIssues.map((issue) =>
         issue.id === updatedIssue.id ? updatedIssue : issue
       )
     );
@@ -176,9 +192,9 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
 
   return (
     <>
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCenter} 
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
@@ -186,14 +202,14 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
           {columns.map((column) => {
             const columnIssues = issues.filter((issue) => issue.status === column.status);
             const issueIds = columnIssues.map(issue => issue.id);
-            
+
             return (
               <DroppableColumn key={column.status} column={column} issues={columnIssues}>
                 <SortableContext items={issueIds} strategy={verticalListSortingStrategy}>
                   {columnIssues.map((issue) => (
-                    <SortableItem 
-                      key={issue.id} 
-                      issue={issue} 
+                    <SortableItem
+                      key={issue.id}
+                      issue={issue}
                       onClick={handleIssueClick}
                     />
                   ))}
@@ -211,8 +227,11 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
       <IssueDetailModal
         issue={selectedIssue}
         isOpen={isModalOpen}
+        onAddComment={onAddComment}
         onClose={handleCloseModal}
+        onDeleteIssue={onDeleteIssue}
         onUpdateIssue={handleUpdateIssue}
+        onSaveIssue={onUpdateIssue}
       />
     </>
   );
@@ -220,4 +239,4 @@ export function KanbanBoard({ issues, setIssues }: KanbanBoardProps) {
 
 // Export Issue type from here might cause issues if also defined in @/types
 // Re-exporting from @/types is better if needed elsewhere
-// export type { Issue }; 
+// export type { Issue };

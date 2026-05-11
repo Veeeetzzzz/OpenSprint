@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createError } from './errorHandler';
-import { prisma } from '../db/prisma';
+import { createError } from './errorHandler.js';
+import { prisma } from '../db/prisma.js';
 
 // Extend Request interface to include project access info
 declare global {
@@ -131,4 +131,4 @@ export const getUserProjects = async (req: Request, res: Response, next: NextFun
   } catch (error) {
     next(error);
   }
-}; 
+};

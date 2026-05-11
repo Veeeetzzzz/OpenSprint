@@ -1,15 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { config } from './config/env';
-import { authRoutes } from './routes/auth';
-import { issueRoutes } from './routes/issues';
-import { projectRoutes } from './routes/projects';
-import { errorHandler } from './middleware/errorHandler';
-import { rateLimiter } from './middleware/rateLimiter';
-import { prisma } from './db/prisma';
-import { fatalStartup } from './utils/fatal';
-import { connectWithRetry, disconnectSafely } from './startup';
+import { fileURLToPath } from 'url';
+import { config, isDemoMode } from './config/env.js';
+import { authRoutes } from './routes/auth.js';
+import { issueRoutes } from './routes/issues.js';
+import { projectRoutes } from './routes/projects.js';
+import { errorHandler } from './middleware/errorHandler.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
+import { prisma } from './db/prisma.js';
+import { ensureDemoSeedData } from './demo.js';
+import { fatalStartup } from './utils/fatal.js';
+import { connectWithRetry, disconnectSafely } from './startup.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize Express app
 const app = express();
@@ -22,15 +27,15 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting (enterprise feature)
+// Rate limiting
 if (config.NODE_ENV === 'production') {
   app.use(rateLimiter);
 }
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '0.1.0',
     features: {
@@ -72,6 +77,10 @@ async function startServer() {
       baseDelayMs: DB_CONNECT_RETRY_DELAY_MS,
     });
     console.log('✅ Database connected');
+
+    if (isDemoMode()) {
+      await ensureDemoSeedData(prisma);
+    }
 
     // Start server
     serverInstance = app.listen(PORT, () => {
@@ -126,4 +135,4 @@ process.on('SIGTERM', () => {
 
 startServer();
 
-export { app, prisma }; 
+export { app, prisma };

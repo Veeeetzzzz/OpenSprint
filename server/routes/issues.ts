@@ -1,10 +1,12 @@
 import express from 'express';
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
-import { createError } from '../middleware/errorHandler';
-import { authenticate } from '../middleware/auth';
-import { requireProjectAccess } from '../middleware/projectAccess';
-import { prisma } from '../db/prisma';
-import { getAuthenticatedUser, getProjectAccessContext } from './requestContext';
+import { createError } from '../middleware/errorHandler.js';
+import { authenticate } from '../middleware/auth.js';
+import { requireProjectAccess } from '../middleware/projectAccess.js';
+import { prisma } from '../db/prisma.js';
+import { getAuthenticatedUser, getProjectAccessContext } from './requestContext.js';
+import { roleMeetsMinimum, type ProjectRole } from '../lib/access.js';
 
 const router = express.Router();
 
@@ -41,6 +43,106 @@ const issueUpdateSchema = z
     epicId: z.string().nullable().optional(),
   })
   .strict();
+
+const commentCreateSchema = z.object({
+  content: z.string().trim().min(1),
+});
+
+const issueInclude = {
+  reporter: {
+    select: { id: true, name: true, email: true, avatarUrl: true },
+  },
+  assignee: {
+    select: { id: true, name: true, email: true, avatarUrl: true },
+  },
+  labels: {
+    include: { label: true },
+  },
+  comments: {
+    include: {
+      author: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  },
+} satisfies Prisma.IssueInclude;
+
+const requireProjectRole = async (
+  projectId: string,
+  userId: string,
+  minRole: ProjectRole
+) => {
+  const projectMember = await prisma.projectMember.findUnique({
+    where: {
+      userId_projectId: {
+        userId,
+        projectId,
+      },
+    },
+  });
+
+  if (!projectMember) {
+    throw createError('Access denied: You are not a member of this project', 403);
+  }
+
+  if (!roleMeetsMinimum(projectMember.role, minRole)) {
+    throw createError(`Access denied: ${minRole} role required`, 403);
+  }
+
+  return projectMember;
+};
+
+const validateIssueRelations = async (
+  projectId: string,
+  data: { assigneeId?: string | null; epicId?: string | null },
+  currentIssueId?: string
+) => {
+  if (data.assigneeId) {
+    const assigneeMembership = await prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: data.assigneeId,
+          projectId,
+        },
+      },
+    });
+    if (!assigneeMembership) {
+      throw createError('Assignee must be a project member', 400);
+    }
+  }
+
+  if (data.epicId) {
+    if (data.epicId === currentIssueId) {
+      throw createError('Issue cannot use itself as an epic', 400);
+    }
+
+    const epic = await prisma.issue.findFirst({
+      where: {
+        id: data.epicId,
+        projectId,
+        type: 'epic',
+      },
+      select: { id: true },
+    });
+    if (!epic) {
+      throw createError('Epic must be an epic issue in the same project', 400);
+    }
+  }
+};
+
+const getIssueOrThrow = async (id: string) => {
+  const issue = await prisma.issue.findUnique({
+    where: { id },
+    select: { projectId: true },
+  });
+
+  if (!issue) {
+    throw createError('Issue not found', 404);
+  }
+
+  return issue;
+};
 // Get issues for a project
 router.get('/', authenticate, async (req, res, next) => {
   try {
@@ -67,31 +169,14 @@ router.get('/', authenticate, async (req, res, next) => {
       throw createError('Access denied: You are not a member of this project', 403);
     }
 
-    const where: any = { projectId };
+    const where: Prisma.IssueWhereInput = { projectId };
     if (status) where.status = status;
     if (type) where.type = type;
     if (priority) where.priority = priority;
 
     const issues = await prisma.issue.findMany({
       where,
-      include: {
-        reporter: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        },
-        assignee: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        },
-        labels: {
-          include: { label: true }
-        },
-        comments: {
-          include: {
-            author: {
-              select: { id: true, name: true, email: true, avatarUrl: true }
-            }
-          }
-        }
-      },
+      include: issueInclude,
       orderBy: { createdAt: 'desc' }
     });
 
@@ -118,19 +203,7 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
     const { title, description, type, priority, assigneeId, estimate, epicId } = parsedBody.data;
     const projectId = projectAccess.projectId;
 
-    if (assigneeId) {
-      const assigneeMembership = await prisma.projectMember.findUnique({
-        where: {
-          userId_projectId: {
-            userId: assigneeId,
-            projectId,
-          },
-        },
-      });
-      if (!assigneeMembership) {
-        throw createError('Assignee must be a project member', 400);
-      }
-    }
+    await validateIssueRelations(projectId, { assigneeId, epicId });
 
     const issue = await prisma.issue.create({
       data: {
@@ -144,14 +217,7 @@ router.post('/', authenticate, requireProjectAccess('member'), async (req, res, 
         estimate,
         epicId,
       },
-      include: {
-        reporter: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        },
-        assignee: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        }
-      }
+      include: issueInclude,
     });
 
     res.status(201).json({
@@ -180,43 +246,9 @@ router.put('/:id', authenticate, async (req, res, next) => {
       throw createError('No fields provided for update', 400);
     }
 
-    // First get the issue to check project access
-    const existingIssue = await prisma.issue.findUnique({
-      where: { id },
-      select: { projectId: true }
-    });
-
-    if (!existingIssue) {
-      throw createError('Issue not found', 404);
-    }
-
-    // Check if user has access to the project
-    const projectMember = await prisma.projectMember.findUnique({
-      where: {
-        userId_projectId: {
-          userId: requester.id,
-          projectId: existingIssue.projectId,
-        },
-      },
-    });
-
-    if (!projectMember) {
-      throw createError('Access denied: You are not a member of this project', 403);
-    }
-
-    if (updateData.assigneeId) {
-      const assigneeMembership = await prisma.projectMember.findUnique({
-        where: {
-          userId_projectId: {
-            userId: updateData.assigneeId,
-            projectId: existingIssue.projectId,
-          },
-        },
-      });
-      if (!assigneeMembership) {
-        throw createError('Assignee must be a project member', 400);
-      }
-    }
+    const existingIssue = await getIssueOrThrow(id);
+    await requireProjectRole(existingIssue.projectId, requester.id, 'member');
+    await validateIssueRelations(existingIssue.projectId, updateData, id);
 
     const issue = await prisma.issue.update({
       where: { id },
@@ -224,14 +256,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
         ...updateData,
         updatedAt: new Date(),
       },
-      include: {
-        reporter: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        },
-        assignee: {
-          select: { id: true, name: true, email: true, avatarUrl: true }
-        }
-      }
+      include: issueInclude,
     });
 
     res.json({
@@ -250,29 +275,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     const { id } = req.params;
 
-    // First get the issue to check project access
-    const existingIssue = await prisma.issue.findUnique({
-      where: { id },
-      select: { projectId: true }
-    });
-
-    if (!existingIssue) {
-      throw createError('Issue not found', 404);
-    }
-
-    // Check if user has admin access to the project
-    const projectMember = await prisma.projectMember.findUnique({
-      where: {
-        userId_projectId: {
-          userId: requester.id,
-          projectId: existingIssue.projectId,
-        },
-      },
-    });
-
-    if (!projectMember || projectMember.role !== 'admin') {
-      throw createError('Access denied: Admin role required', 403);
-    }
+    const existingIssue = await getIssueOrThrow(id);
+    await requireProjectRole(existingIssue.projectId, requester.id, 'admin');
 
     await prisma.issue.delete({
       where: { id },
@@ -287,4 +291,44 @@ router.delete('/:id', authenticate, async (req, res, next) => {
   }
 });
 
-export { router as issueRoutes }; 
+router.post('/:id/comments', authenticate, async (req, res, next) => {
+  try {
+    const requester = getAuthenticatedUser(req);
+    const { id } = req.params;
+    const parsedBody = commentCreateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw createError('Invalid comment payload', 400);
+    }
+
+    const existingIssue = await getIssueOrThrow(id);
+    await requireProjectRole(existingIssue.projectId, requester.id, 'member');
+
+    await prisma.$transaction([
+      prisma.comment.create({
+        data: {
+          content: parsedBody.data.content,
+          issueId: id,
+          authorId: requester.id,
+        },
+      }),
+      prisma.issue.update({
+        where: { id },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+
+    const issue = await prisma.issue.findUnique({
+      where: { id },
+      include: issueInclude,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: issue,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+export { router as issueRoutes };

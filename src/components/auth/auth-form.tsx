@@ -38,7 +38,7 @@ export function AuthForm() {
   const fillDemoCredentials = () => {
     const emailInput = document.getElementById('email') as HTMLInputElement;
     const passwordInput = document.getElementById('password') as HTMLInputElement;
-    
+
     if (emailInput && passwordInput) {
       emailInput.value = 'demo@opensprint.io';
       passwordInput.value = 'demo';
@@ -107,12 +107,12 @@ export function AuthForm() {
             <AlertDescription className="space-y-2">
               <div className="font-medium">Try the Demo!</div>
               <div className="text-sm text-muted-foreground">
-                Use these credentials to explore OpenSprint (works offline):
+                Use these credentials when demo mode is enabled on the server:
               </div>
               <div className="font-mono text-sm space-y-1">
                 <div>Email: demo@opensprint.io</div>
                 <div className="flex items-center gap-2">
-                  Password: 
+                  Password:
                   {showPassword ? (
                     <span>demo</span>
                   ) : (
@@ -140,15 +140,15 @@ export function AuthForm() {
 
             <TabsContent value="login" className="space-y-4">
               <div className="space-y-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
                   onClick={handleDemoLogin}
                   disabled={isLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  🚀 Quick Demo Login
+                  Quick Demo Login
                 </Button>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -161,7 +161,7 @@ export function AuthForm() {
                   </div>
                 </div>
               </div>
-              
+
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -185,10 +185,10 @@ export function AuthForm() {
                     disabled={isLoading}
                   />
                 </div>
-                
-                <Button 
-                  type="button" 
-                  variant="ghost" 
+
+                <Button
+                  type="button"
+                  variant="ghost"
                   size="sm"
                   onClick={fillDemoCredentials}
                   disabled={isLoading}
@@ -196,7 +196,7 @@ export function AuthForm() {
                 >
                   Fill demo credentials
                 </Button>
-                
+
                 {error && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
@@ -273,4 +273,4 @@ export function AuthForm() {
       </Card>
     </div>
   );
-} 
+}

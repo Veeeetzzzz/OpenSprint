@@ -1,10 +1,11 @@
 import express from 'express';
 import { z } from 'zod';
-import { createError } from '../middleware/errorHandler';
-import { authenticate } from '../middleware/auth';
-import { requireProjectAccess, getUserProjects } from '../middleware/projectAccess';
-import { prisma } from '../db/prisma';
-import { getAuthenticatedUser } from './requestContext';
+import { createError } from '../middleware/errorHandler.js';
+import { authenticate } from '../middleware/auth.js';
+import { requireProjectAccess, getUserProjects } from '../middleware/projectAccess.js';
+import { prisma } from '../db/prisma.js';
+import { getAuthenticatedUser } from './requestContext.js';
+import { isLastAdminChangeBlocked } from '../lib/access.js';
 
 const router = express.Router();
 
@@ -36,6 +37,20 @@ const projectMemberCreateSchema = z.object({
 const projectMemberUpdateSchema = z.object({
   role: z.enum(projectRoleValues),
 });
+
+const assertCanChangeAdminMember = async (
+  projectId: string,
+  existingRole: string,
+  nextRole: string | null
+) => {
+  const adminCount = await prisma.projectMember.count({
+    where: { projectId, role: 'admin' },
+  });
+
+  if (isLastAdminChangeBlocked(existingRole, nextRole, adminCount)) {
+    throw createError('Project must keep at least one admin', 400);
+  }
+};
 // Get user's projects
 router.get('/', authenticate, getUserProjects, async (req, res, next) => {
   try {
@@ -266,6 +281,8 @@ router.put('/:projectId/members/:memberId', authenticate, requireProjectAccess('
       throw createError('Project member not found', 404);
     }
 
+    await assertCanChangeAdminMember(projectId, existingMember.role, role);
+
     const updatedMember = await prisma.projectMember.update({
       where: {
         id: memberId,
@@ -303,6 +320,8 @@ router.delete('/:projectId/members/:memberId', authenticate, requireProjectAcces
       throw createError('Project member not found', 404);
     }
 
+    await assertCanChangeAdminMember(projectId, existingMember.role, null);
+
     await prisma.projectMember.delete({
       where: {
         id: memberId,
@@ -318,4 +337,4 @@ router.delete('/:projectId/members/:memberId', authenticate, requireProjectAcces
   }
 });
 
-export { router as projectRoutes }; 
+export { router as projectRoutes };

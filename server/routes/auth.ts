@@ -1,9 +1,11 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { config, isDemoMode } from '../config/env';
-import { createError } from '../middleware/errorHandler';
-import { prisma } from '../db/prisma';
+import { config, isDemoMode } from '../config/env.js';
+import { authenticate } from '../middleware/auth.js';
+import { createError } from '../middleware/errorHandler.js';
+import { prisma } from '../db/prisma.js';
+import { getAuthenticatedUser } from './requestContext.js';
 
 const router = express.Router();
 // User login
@@ -19,7 +21,7 @@ router.post('/login', async (req, res, next) => {
     if (isDemoMode()) {
       const demoUsername = config.DEMO_USERNAME;
       const demoPassword = config.DEMO_PASSWORD;
-      
+
       if ((email === demoUsername || email === config.DEMO_USER_EMAIL) && password === demoPassword) {
         // Generate JWT for demo user
         const demoUser = {
@@ -46,7 +48,7 @@ router.post('/login', async (req, res, next) => {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
@@ -166,60 +168,16 @@ router.post('/logout', async (req, res, next) => {
   }
 });
 
-// Get current user (requires authentication)
-router.get('/me', async (req, res, next) => {
+router.get('/me', authenticate, async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      throw createError('No token provided', 401);
-    }
-
-    const decoded = jwt.verify(token, config.JWT_SECRET) as { userId: string; email: string };
-    
-    // Handle demo user when demo mode is enabled
-    if (isDemoMode() && decoded.userId === 'demo-user-id') {
-      const demoUser = {
-        id: 'demo-user-id',
-        email: config.DEMO_USER_EMAIL,
-        name: config.DEMO_USER_NAME,
-        avatarUrl: null,
-        isActive: true,
-        createdAt: new Date('2024-01-01T00:00:00.000Z'), // Fixed demo date
-      };
-
-      return res.json({
-        success: true,
-        data: { user: demoUser },
-      });
-    }
-    
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatarUrl: true,
-        isActive: true,
-        createdAt: true,
-      }
-    });
-
-    if (!user || !user.isActive) {
-      throw createError('User not found or inactive', 404);
-    }
+    const user = getAuthenticatedUser(req);
 
     res.json({
       success: true,
       data: { user },
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'JsonWebTokenError') {
-      next(createError('Invalid token', 401));
-    } else {
-      next(error);
-    }
+    next(error);
   }
 });
 
@@ -244,4 +202,4 @@ router.get('/config', async (req, res, next) => {
   }
 });
 
-export { router as authRoutes }; 
+export { router as authRoutes };

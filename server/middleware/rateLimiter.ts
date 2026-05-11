@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { config } from '../config/env';
+import { config } from '../config/env.js';
 
-// Simple in-memory rate limiter (for production, use Redis)
+// Simple in-memory rate limiter for the single-process SQLite deployment.
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
 export const rateLimiter = (req: Request, res: Response, next: NextFunction) => {
@@ -49,4 +49,4 @@ export const rateLimiter = (req: Request, res: Response, next: NextFunction) => 
   }
 
   next();
-}; 
+};

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // For development, use PostgreSQL in production
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -129,4 +129,4 @@ model IssueLabel {
 
   @@id([issueId, labelId])
   @@map("issue_labels")
-} 
+}

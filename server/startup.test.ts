@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { connectWithRetry, disconnectSafely } from './startup';
+import { connectWithRetry, disconnectSafely } from './startup.js';
 
 describe('startup helpers', () => {
   it('retries database connection and eventually succeeds', async () => {

@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import { describe, expect, it } from 'vitest';
-import { getAuthenticatedUser, getProjectAccessContext } from './requestContext';
+import { getAuthenticatedUser, getProjectAccessContext } from './requestContext.js';
 
 describe('requestContext guards', () => {
   it('throws 401 when user is missing', () => {

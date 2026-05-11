@@ -11,10 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  MagnifyingGlassIcon, 
-  MixerHorizontalIcon, 
-  ArrowUpIcon, 
+import {
+  MagnifyingGlassIcon,
+  MixerHorizontalIcon,
+  ArrowUpIcon,
   ArrowDownIcon,
   CalendarIcon,
   PersonIcon
@@ -24,90 +24,6 @@ import type { Issue, Priority, IssueType } from '@/types';
 interface BacklogPageProps {
   issues?: Issue[];
 }
-
-// Mock backlog data - used as fallback when no issues are passed
-const mockBacklogIssues: Issue[] = [
-  {
-    id: 'ISS-004',
-    title: 'Implement user dashboard',
-    description: 'Create a comprehensive dashboard for users to view their tasks and projects',
-    type: 'story',
-    status: 'backlog',
-    priority: 'highest',
-    reporter: { 
-      id: 'user-1', 
-      name: 'John Doe', 
-      email: 'john@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-18T10:00:00Z'),
-    updatedAt: new Date('2024-01-18T10:00:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['dashboard', 'ui'],
-    estimate: 8
-  },
-  {
-    id: 'ISS-005',
-    title: 'Add search functionality',
-    description: 'Users should be able to search through issues and projects',
-    type: 'task',
-    status: 'backlog',
-    priority: 'high',
-    reporter: { 
-      id: 'user-2', 
-      name: 'Jane Smith', 
-      email: 'jane@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-19T09:15:00Z'),
-    updatedAt: new Date('2024-01-19T09:15:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['search', 'feature'],
-    estimate: 5
-  },
-  {
-    id: 'ISS-006',
-    title: 'Performance optimization',
-    description: 'Optimize application performance for better user experience',
-    type: 'task',
-    status: 'backlog',
-    priority: 'medium',
-    reporter: { 
-      id: 'user-1', 
-      name: 'John Doe', 
-      email: 'john@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-20T14:30:00Z'),
-    updatedAt: new Date('2024-01-20T14:30:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['performance', 'optimization'],
-    estimate: 13
-  },
-  {
-    id: 'ISS-007',
-    title: 'Fix mobile responsiveness',
-    description: 'Some components are not responsive on smaller screens',
-    type: 'bug',
-    status: 'backlog',
-    priority: 'low',
-    reporter: { 
-      id: 'user-3', 
-      name: 'Bob Wilson', 
-      email: 'bob@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-21T11:00:00Z'),
-    updatedAt: new Date('2024-01-21T11:00:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['mobile', 'responsive'],
-    estimate: 3
-  }
-];
 
 // Priority order for sorting
 const priorityOrder: Record<Priority, number> = {
@@ -147,18 +63,17 @@ const getTypeColor = (type: IssueType) => {
   }
 };
 
-const formatDate = (date: Date) => {
+const formatDate = (date: string) => {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  }).format(date);
+  }).format(new Date(date));
 };
 
 export function BacklogPage({ issues = [] }: BacklogPageProps) {
-  // Use all passed issues or fallback to mock data if no issues exist
-  const allIssues = issues.length > 0 ? issues : mockBacklogIssues;
-    
+  const allIssues = issues;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -174,12 +89,12 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
       const matchesPriority = filterPriority === 'all' || issue.priority === filterPriority;
       const matchesType = filterType === 'all' || issue.type === filterType;
       const matchesStatus = filterStatus === 'all' || issue.status === filterStatus;
-      
+
       return matchesSearch && matchesPriority && matchesType && matchesStatus;
     })
     .sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'priority':
           comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -191,7 +106,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
           comparison = (a.estimate || 0) - (b.estimate || 0);
           break;
       }
-      
+
       return sortOrder === 'desc' ? -comparison : comparison;
     });
 
@@ -225,7 +140,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
             className="pl-10"
           />
         </div>
-        
+
         <div className="flex gap-2">
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-32">
@@ -267,7 +182,10 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+          <Select
+            value={sortBy}
+            onValueChange={(value: 'priority' | 'created' | 'estimate') => setSortBy(value)}
+          >
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -297,7 +215,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
               <div className="flex items-start gap-4">
                 {/* Priority indicator */}
                 <div className={`w-1 h-16 rounded-full ${getPriorityColor(issue.priority).split(' ')[0]}`} />
-                
+
                 {/* Issue content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
@@ -310,7 +228,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
                           {issue.priority}
                         </Badge>
                         <Badge variant={issue.status === 'done' ? 'default' : 'secondary'} className="text-xs">
-                          {issue.status === 'inProgress' ? 'In Progress' : 
+                          {issue.status === 'inProgress' ? 'In Progress' :
                            issue.status === 'todo' ? 'To Do' :
                            issue.status === 'done' ? 'Done' :
                            issue.status === 'backlog' ? 'Backlog' : issue.status}
@@ -319,29 +237,29 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
                           {issue.id}
                         </span>
                       </div>
-                      
+
                       <h3 className="font-medium text-sm mb-1">{issue.title}</h3>
                       <p className="text-xs text-muted-foreground line-clamp-2">
                         {issue.description}
                       </p>
-                      
+
                       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <PersonIcon className="h-3 w-3" />
                           <Avatar className="h-5 w-5">
-                            <AvatarImage src={issue.reporter.avatarUrl} />
+                            <AvatarImage src={issue.reporter.avatarUrl || ''} />
                             <AvatarFallback className="text-xs">
                               {issue.reporter.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <span>{issue.reporter.name}</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-1">
                           <CalendarIcon className="h-3 w-3" />
                           <span>{formatDate(issue.createdAt)}</span>
                         </div>
-                        
+
                         {issue.estimate && (
                           <div className="flex items-center gap-1">
                             <span>{issue.estimate} pts</span>
@@ -355,7 +273,7 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
             </CardContent>
           </Card>
         ))}
-        
+
         {filteredAndSortedIssues.length === 0 && (
           <div className="text-center py-12">
             <MixerHorizontalIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -370,4 +288,4 @@ export function BacklogPage({ issues = [] }: BacklogPageProps) {
       </div>
     </div>
   );
-} 
+}

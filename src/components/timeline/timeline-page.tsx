@@ -8,73 +8,12 @@ interface TimelinePageProps {
   issues?: Issue[];
 }
 
-// Mock data for timeline - used as fallback when no issues are passed
-const mockTimelineIssues: Issue[] = [
-  {
-    id: 'ISS-001',
-    title: 'Setup project structure',
-    description: 'Initialize the project with proper folder structure and dependencies',
-    type: 'task',
-    status: 'done',
-    priority: 'high',
-    reporter: { 
-      id: 'user-1', 
-      name: 'John Doe', 
-      email: 'john@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-15T10:00:00Z'),
-    updatedAt: new Date('2024-01-16T14:30:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['setup', 'infrastructure']
-  },
-  {
-    id: 'ISS-002',
-    title: 'Design user authentication flow',
-    description: 'Create wireframes and user flows for the authentication system',
-    type: 'story',
-    status: 'inProgress',
-    priority: 'medium',
-    reporter: { 
-      id: 'user-2', 
-      name: 'Jane Smith', 
-      email: 'jane@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-16T09:00:00Z'),
-    updatedAt: new Date('2024-01-17T16:00:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['design', 'auth']
-  },
-  {
-    id: 'ISS-003',
-    title: 'Fix login button styling',
-    description: 'The login button is not aligned properly on mobile devices',
-    type: 'bug',
-    status: 'todo',
-    priority: 'low',
-    reporter: { 
-      id: 'user-3', 
-      name: 'Bob Wilson', 
-      email: 'bob@example.com', 
-      avatarUrl: '' 
-    },
-    createdAt: new Date('2024-01-17T11:30:00Z'),
-    updatedAt: new Date('2024-01-17T11:30:00Z'),
-    comments: [],
-    attachments: [],
-    labels: ['ui', 'mobile']
-  }
-];
-
 // Helper function to get status color
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'done':
       return 'bg-green-500';
-    case 'in-progress':
+    case 'inProgress':
       return 'bg-blue-500';
     case 'todo':
       return 'bg-yellow-500';
@@ -92,7 +31,7 @@ const getStatusText = (status: string) => {
   switch (status) {
     case 'done':
       return 'Completed';
-    case 'in-progress':
+    case 'inProgress':
       return 'In Progress';
     case 'todo':
       return 'To Do';
@@ -122,21 +61,18 @@ const getTypeColor = (type: Issue['type']) => {
 };
 
 // Helper function to format date
-const formatDate = (date: Date) => {
+const formatDate = (date: string) => {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  }).format(date);
+  }).format(new Date(date));
 };
 
 export function TimelinePage({ issues = [] }: TimelinePageProps) {
-  // Use passed issues or fallback to mock data
-  const timelineIssues = issues.length > 0 ? issues : mockTimelineIssues;
-  
   // Sort issues by creation date (newest first)
-  const sortedIssues = [...timelineIssues].sort((a, b) => 
+  const sortedIssues = [...issues].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -153,7 +89,7 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
-        
+
         <div className="space-y-6">
           {sortedIssues.map((issue) => (
             <div key={issue.id} className="relative flex items-start gap-6">
@@ -164,7 +100,7 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
               `}>
                 <div className="absolute inset-0 rounded-full animate-pulse opacity-25 bg-current scale-150"></div>
               </div>
-              
+
               {/* Content */}
               <Card className="flex-1 max-w-2xl">
                 <CardHeader className="pb-3">
@@ -189,16 +125,16 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="pt-0">
                   <p className="text-sm text-muted-foreground mb-4">
                     {issue.description}
                   </p>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Avatar className="h-7 w-7">
-                        <AvatarImage src={issue.reporter.avatarUrl} />
+                        <AvatarImage src={issue.reporter.avatarUrl || ''} />
                         <AvatarFallback className="text-xs">
                           {issue.reporter.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
@@ -208,7 +144,7 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
                         <p className="text-muted-foreground">Reporter</p>
                       </div>
                     </div>
-                    
+
                     {issue.labels.length > 0 && (
                       <div className="flex gap-1">
                         {issue.labels.map((label) => (
@@ -219,8 +155,8 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
                       </div>
                     )}
                   </div>
-                  
-                  {issue.updatedAt > issue.createdAt && (
+
+                  {new Date(issue.updatedAt).getTime() > new Date(issue.createdAt).getTime() && (
                     <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
                       Last updated: {formatDate(issue.updatedAt)}
                     </div>
@@ -230,7 +166,7 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
             </div>
           ))}
         </div>
-        
+
         {sortedIssues.length === 0 && (
           <div className="text-center py-12">
             <ClockIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -241,4 +177,4 @@ export function TimelinePage({ issues = [] }: TimelinePageProps) {
       </div>
     </div>
   );
-} 
+}

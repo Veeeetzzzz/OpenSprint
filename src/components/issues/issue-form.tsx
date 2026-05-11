@@ -19,14 +19,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import type { Issue } from '@/types'; // Import Issue type
-
-// Define the type for the data needed to create an issue (excluding id, status, etc.)
-type CreateIssueData = Omit<Issue, 'id' | 'status' | 'reporter' | 'createdAt' | 'updatedAt' | 'comments' | 'attachments' | 'labels' | 'assignee' | 'epic' | 'estimate'>;
+import type { IssueCreateInput } from '@/lib/api';
+import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Define component props
 interface IssueFormProps {
-  addIssue: (data: CreateIssueData) => void;
+  addIssue: (data: IssueCreateInput) => Promise<void>;
 }
 
 const issueSchema = z.object({
@@ -41,6 +40,8 @@ type IssueFormValues = z.infer<typeof issueSchema>;
 
 // Accept addIssue prop
 export function IssueForm({ addIssue }: IssueFormProps) {
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<IssueFormValues>({
     resolver: zodResolver(issueSchema),
     defaultValues: {
@@ -51,17 +52,24 @@ export function IssueForm({ addIssue }: IssueFormProps) {
     },
   });
 
-  function onSubmit(values: IssueFormValues) {
+  async function onSubmit(values: IssueFormValues) {
+    setIsSubmitting(true);
+    setError('');
     // Prepare data for addIssue (matching CreateIssueData)
-    const issueData: CreateIssueData = {
+    const issueData: IssueCreateInput = {
       title: values.title,
       description: values.description,
       type: values.type, // Zod ensures this matches IssueType
       priority: values.priority, // Zod ensures this matches Priority
     };
-    addIssue(issueData); // Call the function passed from App.tsx
-    form.reset(); // Reset form fields
-    console.log("Issue created:", issueData);
+    try {
+      await addIssue(issueData);
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create issue');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -150,11 +158,19 @@ export function IssueForm({ addIssue }: IssueFormProps) {
           )}
         />
         
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex justify-end gap-4">
-          <Button variant="outline" type="button" onClick={() => form.reset()}>
+          <Button variant="outline" type="button" onClick={() => form.reset()} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit">Create Issue</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating...' : 'Create Issue'}
+          </Button>
         </div>
       </form>
     </Form>

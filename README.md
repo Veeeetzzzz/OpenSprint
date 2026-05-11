@@ -1,8 +1,8 @@
 # OpenSprint
 
-**Open source issue tracker for Agile teams** - A self-hosted, enterprise-ready alternative to Jira/Atlassian.
+**Open source issue tracker for Agile teams** - A self-hosted alternative to Jira/Atlassian.
 
-Built with React, TypeScript, Node.js, and PostgreSQL/SQLite.
+Built with React, TypeScript, Node.js, Prisma, and SQLite.
 
 <img width="1569" height="607" alt="image" src="https://github.com/user-attachments/assets/9cdc6184-552e-4fe8-9b4d-79361ec724bc" />
 
@@ -17,24 +17,23 @@ Built with React, TypeScript, Node.js, and PostgreSQL/SQLite.
 - **Multi-tenancy:** Project-based organization
 - **Responsive Design:** Works on desktop, tablet, and mobile
 
-## 🏢 Enterprise Ready
+## Roadmap Toward Enterprise
 
-### **Deployment Options**
-- **Simple:** Single Docker container with SQLite
-- **Scalable:** Docker Compose with PostgreSQL and Redis
-- **Enterprise:** Kubernetes with external databases
+### **Deployment**
+- Single-container SQLite deployment
+- Docker Compose with a persisted SQLite volume
+- PostgreSQL, Redis, and Kubernetes are roadmap items, not supported runtime targets yet
 
 ### **Authentication**
 - **Built-in:** Simple username/password
-- **SSO:** SAML and OIDC integration
-- **Enterprise:** Active Directory, LDAP
+- **SSO:** SAML and OIDC are roadmap items
 
 ### **Security & Compliance**
 - Role-based access control (RBAC)
-- Audit logging
+- Audit logging is a roadmap item
 - Rate limiting
 - HTTPS/TLS support
-- SOC 2 compliance ready
+- Compliance hardening is a roadmap item
 
 ## 🚀 Quick Start
 
@@ -46,21 +45,7 @@ cd opensprint
 docker compose -f docker-compose.simple.yml up -d
 ```
 
-### **Option 2: Enterprise Deployment (PostgreSQL)**
-```bash
-# Clone repository
-git clone https://github.com/yourusername/opensprint.git
-cd opensprint
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Run with PostgreSQL
-docker compose up -d
-```
-
-### **Option 3: Development Setup**
+### **Option 2: Development Setup**
 ```bash
 # Install dependencies
 npm install
@@ -74,8 +59,8 @@ npx prisma db push
 npm run dev
 ```
 
-### **Option 4: Vercel Demo Deployment**
-For hosted demos on Vercel, set these environment variables in your Vercel dashboard:
+### **Option 3: Demo Mode**
+Demo mode still requires the SQLite database connection. It seeds a demo user, project, and issues at server startup.
 
 ```bash
 # Required
@@ -89,7 +74,7 @@ DEMO_USER_EMAIL=demo@opensprint.io
 DEMO_USER_NAME=Demo User
 ```
 
-The demo mode bypasses database requirements and provides instant access with `demo:demo` credentials.
+Demo credentials are `demo@opensprint.io` / `demo` by default.
 
 ## ⚙️ Configuration
 
@@ -97,39 +82,35 @@ The demo mode bypasses database requirements and provides instant access with `d
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_PROVIDER` | `sqlite` | Database type: `sqlite` or `postgresql` |
+| `DATABASE_PROVIDER` | `sqlite` | Database type. Only `sqlite` is supported currently |
 | `DATABASE_URL` | `file:./dev.db` | Database connection string |
-| `AUTH_MODE` | `simple` | Auth mode: `simple`, `oidc`, `saml`, `disabled` |
+| `AUTH_MODE` | `simple` | Auth mode. Only `simple` is implemented currently |
 | `JWT_SECRET` | - | JWT signing secret (required) |
 | `DEMO_MODE` | `false` | Enable demo login for hosted demos |
 | `DEMO_USERNAME` | `demo` | Demo login username |
 | `DEMO_PASSWORD` | `demo` | Demo login password |
 | `DEMO_USER_EMAIL` | `demo@opensprint.io` | Demo user email |
-| `FEATURE_AUDIT_LOG` | `false` | Enable audit logging |
-| `FEATURE_WEBHOOKS` | `false` | Enable webhook integrations |
+| `FEATURE_AUDIT_LOG` | `false` | Reserved for future audit logging |
+| `FEATURE_WEBHOOKS` | `false` | Reserved for future webhook integrations |
 
-### **Simple vs Enterprise**
+### **Current Runtime**
 
-| Feature | Simple | Enterprise |
-|---------|--------|------------|
-| Database | SQLite | PostgreSQL + Redis |
-| Authentication | Built-in | SSO + LDAP |
-| Deployment | Single container | Multi-container + Load balancer |
-| Monitoring | Basic logs | Full observability stack |
-| Backup | File-based | Automated + Point-in-time recovery |
+| Feature | Status |
+|---------|--------|
+| Database | SQLite |
+| Authentication | Built-in JWT |
+| Deployment | Single Node container |
+| Monitoring | Health endpoint and console logs |
+| Backup | SQLite file/volume backup |
 
 ## 🔧 Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React SPA     │◄──►│   Node.js API   │◄──►│   PostgreSQL    │
+│   React SPA     │◄──►│   Node.js API   │◄──►│     SQLite      │
 │   (Frontend)    │    │   (Backend)     │    │   (Database)    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                               │
-                       ┌─────────────────┐
-                       │     Redis       │
-                       │   (Caching)     │
-                       └─────────────────┘
 ```
 
 ## 📊 Roadmap
@@ -157,8 +138,8 @@ The demo mode bypasses database requirements and provides instant access with `d
 ### **Tech Stack**
 - **Frontend:** React 18, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend:** Node.js, Express, Prisma ORM
-- **Database:** PostgreSQL (prod), SQLite (dev)
-- **Infrastructure:** Docker, Kubernetes
+- **Database:** SQLite
+- **Infrastructure:** Docker
 
 ### **Contributing**
 1. Fork the repository
@@ -172,19 +153,19 @@ The demo mode bypasses database requirements and provides instant access with `d
 # Unit tests
 npm test
 
-# E2E tests
-npm run test:e2e
+# Lint
+npm run lint
 
-# Database tests
-npm run test:db
+# Production build
+npm run build
 ```
 
 ## 🔒 Security
 
 - Report security vulnerabilities via GitHub issues
-- All data encrypted in transit and at rest
-- Regular security audits and dependency updates
-- OWASP compliance guidelines followed
+- Use HTTPS/TLS at the deployment edge for data in transit
+- Keep dependencies updated and review security advisories
+- SQLite files should be protected with host filesystem permissions and backups
 
 ## 📄 License
 
@@ -194,7 +175,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Community:** [GitHub Discussions](https://github.com/yourusername/opensprint/discussions)
 - **Documentation:** [docs.opensprint.dev](https://docs.opensprint.dev)
-- **Enterprise Support:** [enterprise@opensprint.dev](mailto:enterprise@opensprint.dev)
+- **Roadmap Questions:** [GitHub Discussions](https://github.com/yourusername/opensprint/discussions)
 
 ---
 

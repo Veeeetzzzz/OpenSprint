@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,16 +40,10 @@ export function UserManagement({ projectId }: UserManagementProps) {
   const [newMemberRole, setNewMemberRole] = useState<'admin' | 'member' | 'viewer'>('member');
   const [editingMember, setEditingMember] = useState<ProjectMember | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
   const { token } = useAuth();
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchMembers(controller.signal);
-    return () => controller.abort();
-  }, [projectId]);
-
-  const parseJsonResponse = async (response: Response) => {
+  const parseJsonResponse = useCallback(async (response: Response) => {
     const contentType = response.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       return null;
@@ -59,9 +53,9 @@ export function UserManagement({ projectId }: UserManagementProps) {
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  const fetchMembers = async (signal?: AbortSignal) => {
+  const fetchMembers = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/projects/${projectId}`, {
@@ -85,10 +79,17 @@ export function UserManagement({ projectId }: UserManagementProps) {
       if (signal?.aborted) return;
       setError(err instanceof Error ? err.message : 'Failed to fetch members');
     } finally {
-      if (signal?.aborted) return;
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [parseJsonResponse, projectId, token]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchMembers(controller.signal);
+    return () => controller.abort();
+  }, [fetchMembers]);
 
   const addMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,8 +149,8 @@ export function UserManagement({ projectId }: UserManagementProps) {
         throw new Error(data.error?.message || 'Failed to update member role');
       }
 
-      setMembers(members.map(member => 
-        member.id === memberId 
+      setMembers(members.map(member =>
+        member.id === memberId
           ? { ...member, role: newRole }
           : member
       ));
@@ -349,4 +350,4 @@ export function UserManagement({ projectId }: UserManagementProps) {
       </Card>
     </div>
   );
-} 
+}
